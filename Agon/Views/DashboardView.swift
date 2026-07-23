@@ -1,13 +1,15 @@
 import SwiftUI
 
 struct DashboardView: View {
+    @StateObject private var viewModel = DashboardViewModel()
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Greeting
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Good morning 👋")
+                        Text(viewModel.greeting)
                             .font(.subheadline)
                             .foregroundStyle(Color.agonTextSecondary)
                         Text("Your Health Today")
@@ -18,17 +20,34 @@ struct DashboardView: View {
                 }
                 .padding(.horizontal)
 
-                // Metric Cards
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 16) {
-                    MetricCard(title: "Steps", value: "8,432", icon: "figure.walk", color: Color.agonAccent)
-                    MetricCard(title: "Calories", value: "1,847", icon: "flame", color: Color.agonSecondary)
-                    MetricCard(title: "Sleep", value: "7h 23m", icon: "moon.fill", color: Color.agonTextSecondary)
-                    MetricCard(title: "Heart Rate", value: "72 bpm", icon: "heart.fill", color: Color.agonAccent)
+                // Loading / Error / Metric Cards
+                if viewModel.isLoading && viewModel.snapshot == nil {
+                    ProgressView("Loading health data...")
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                } else if let error = viewModel.errorMessage, viewModel.snapshot == nil {
+                    VStack(spacing: 12) {
+                        Image(systemName: "heart.slash")
+                            .font(.largeTitle)
+                            .foregroundStyle(Color.agonTextSecondary)
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.agonTextSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 200)
+                    .padding(.horizontal)
+                } else {
+                    // Metric Cards — 2 columns, 3 rows for 6 metrics
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 16) {
+                        ForEach(viewModel.metrics) { metric in
+                            MetricCard(metric: metric)
+                        }
+                    }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
 
                 // Active Challenge Preview
                 VStack(alignment: .leading, spacing: 12) {
@@ -46,7 +65,7 @@ struct DashboardView: View {
                                 .foregroundStyle(Color.agonTextSecondary)
                         }
                         Spacer()
-                        CircularProgressView(progress: 0.84)
+                        CircularProgressView(progress: stepsProgress)
                     }
                     .padding()
                     .background(Color.agonSurface)
@@ -57,28 +76,53 @@ struct DashboardView: View {
             .padding(.vertical)
         }
         .background(Color.agonBackground)
+        .refreshable {
+            await viewModel.refresh()
+        }
+        .task {
+            await viewModel.onAppear()
+        }
+        .alert("Health Access Required", isPresented: $viewModel.showPermissionAlert) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Agon needs access to your health data to show your metrics and power challenges. Please enable it in Settings.")
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var stepsProgress: Double {
+        guard let steps = viewModel.snapshot?.steps else { return 0 }
+        return min(steps / 10_000, 1.0)
     }
 }
 
-// MARK: - Components
+// MARK: - Metric Card
 
 struct MetricCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
+    let metric: HealthMetric
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: icon)
+            Image(systemName: metric.type.icon)
                 .font(.title2)
-                .foregroundStyle(color)
+                .foregroundStyle(colorForMetric(metric.type))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(value)
-                    .font(.title3.bold())
-                    .foregroundStyle(Color.agonTextPrimary)
-                Text(title)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(metric.formattedValue)
+                        .font(.title3.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                    Text(metric.type.unit)
+                        .font(.caption)
+                        .foregroundStyle(Color.agonTextSecondary)
+                }
+                Text(metric.type.title)
                     .font(.caption)
                     .foregroundStyle(Color.agonTextSecondary)
             }
@@ -88,7 +132,20 @@ struct MetricCard: View {
         .background(Color.agonSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+
+    private func colorForMetric(_ type: HealthMetricType) -> Color {
+        switch type {
+        case .steps: return Color.agonAccent
+        case .distanceWalked: return Color.agonSecondary
+        case .distanceRan: return Color.agonAccent
+        case .totalSleep: return Color.agonTextSecondary
+        case .timeInDaylight: return Color.yellow
+        case .exerciseMinutes: return Color.green
+        }
+    }
 }
+
+// MARK: - Circular Progress
 
 struct CircularProgressView: View {
     let progress: Double
