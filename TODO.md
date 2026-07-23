@@ -5,14 +5,14 @@ A working app where users can connect HealthKit, see real health data on their d
 
 ---
 
-## Phase 1: Live Health Data (HealthKit)
-- [ ] 1. Add HealthKit entitlement & capability to project
-- [ ] 2. Create HealthKitService (request permissions, read data)
-- [ ] 3. Pull steps, calories, sleep, heart rate from HealthKit
-- [ ] 4. Create data models (HealthMetric, DailySnapshot)
-- [ ] 5. Create DashboardViewModel to feed real data to UI
-- [ ] 6. Replace placeholder dashboard with live HealthKit data
-- [ ] 7. Add pull-to-refresh on dashboard
+## Phase 1: Live Health Data (HealthKit) ✅
+- [x] 1. Add HealthKit entitlement & capability to project
+- [x] 2. Create HealthKitService (request permissions, read data)
+- [x] 3. Pull steps, calories, sleep, heart rate from HealthKit
+- [x] 4. Create data models (HealthMetric, DailySnapshot)
+- [x] 5. Create DashboardViewModel to feed real data to UI
+- [x] 6. Replace placeholder dashboard with live HealthKit data
+- [x] 7. Add pull-to-refresh on dashboard
 
 ## Phase 2: Authentication
 - [ ] 8. Add Apple Sign In capability
@@ -63,6 +63,10 @@ A working app where users can connect HealthKit, see real health data on their d
 - [x] Colour scheme applied
 - [x] Logo + App icon
 - [x] Running on physical iPhone
+- [x] .gitignore added
+- [x] HealthKit entitlement & service created
+- [x] Health data models (HealthMetric, DailySnapshot)
+- [x] DashboardViewModel created
 
 ---
 

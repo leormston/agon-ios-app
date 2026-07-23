@@ -16,6 +16,10 @@
 		E51000007 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000007 /* ProfileView.swift */; };
 		E51000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E52000008 /* Assets.xcassets */; };
 		E51000009 /* Color+Agon.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000010 /* Color+Agon.swift */; };
+		E51000010 /* HealthMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000011 /* HealthMetric.swift */; };
+		E51000011 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000012 /* HealthKitService.swift */; };
+		E51000012 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000013 /* DashboardViewModel.swift */; };
+		E51000013 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E52000014 /* HealthKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +33,11 @@
 		E52000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E52000009 /* Agon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Agon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E52000010 /* Color+Agon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Agon.swift"; sourceTree = "<group>"; };
+		E52000011 /* HealthMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthMetric.swift; sourceTree = "<group>"; };
+		E52000012 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
+		E52000013 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		E52000014 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		E52000015 /* Agon.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Agon.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E51000013 /* HealthKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -46,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				E54000002 /* Agon */,
+				E54000006 /* Frameworks */,
 				E54000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -53,9 +64,13 @@
 		E54000002 /* Agon */ = {
 			isa = PBXGroup;
 			children = (
+				E52000015 /* Agon.entitlements */,
 				E52000001 /* AgonApp.swift */,
 				E52000002 /* ContentView.swift */,
 				E54000003 /* Views */,
+				E54000007 /* Models */,
+				E54000008 /* Services */,
+				E54000009 /* ViewModels */,
 				E54000004 /* Utilities */,
 				E52000008 /* Assets.xcassets */,
 			);
@@ -90,6 +105,38 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		E54000006 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E52000014 /* HealthKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E54000007 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E52000011 /* HealthMetric.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E54000008 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				E52000012 /* HealthKitService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		E54000009 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				E52000013 /* DashboardViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -122,6 +169,11 @@
 				TargetAttributes = {
 					E55000001 = {
 						CreatedOnToolsVersion = 15.0;
+						SystemCapabilities = {
+							com.apple.HealthKit = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -167,6 +219,9 @@
 				E51000006 /* CommunityView.swift in Sources */,
 				E51000007 /* ProfileView.swift in Sources */,
 				E51000009 /* Color+Agon.swift in Sources */,
+				E51000010 /* HealthMetric.swift in Sources */,
+				E51000011 /* HealthKitService.swift in Sources */,
+				E51000012 /* DashboardViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -284,6 +339,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = Agon/Agon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5XU2ZW3YP4;
@@ -315,6 +371,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = Agon/Agon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5XU2ZW3YP4;
