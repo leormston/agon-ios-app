@@ -19,8 +19,8 @@ module "dynamodb" {
 module "api_gateway" {
   source = "../../modules/api-gateway"
 
-  environment      = var.environment
-  cognito_user_pool_arn = module.cognito.user_pool_arn
+  environment           = var.environment
+  cognito_user_pool_id  = module.cognito.user_pool_id
   lambda_invoke_arn     = module.lambda.invoke_arn
   lambda_function_name  = module.lambda.function_name
 }

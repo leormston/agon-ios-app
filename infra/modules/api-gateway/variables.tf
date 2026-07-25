@@ -2,7 +2,7 @@ variable "environment" {
   type = string
 }
 
-variable "cognito_user_pool_arn" {
+variable "cognito_user_pool_id" {
   type = string
 }
 

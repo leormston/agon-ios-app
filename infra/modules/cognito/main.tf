@@ -65,7 +65,7 @@ resource "aws_cognito_user_pool_client" "ios_app" {
     "ALLOW_CUSTOM_AUTH",
   ]
 
-  supported_identity_providers = ["APPLE", "Google"]
+  supported_identity_providers = ["SignInWithApple", "Google"]
 
   callback_urls = ["agon://callback"]
   logout_urls   = ["agon://signout"]
@@ -83,7 +83,7 @@ resource "aws_cognito_user_pool_client" "ios_app" {
 # Apple Identity Provider
 resource "aws_cognito_identity_provider" "apple" {
   user_pool_id  = aws_cognito_user_pool.main.id
-  provider_name = "APPLE"
+  provider_name = "SignInWithApple"
   provider_type = "SignInWithApple"
 
   provider_details = {
