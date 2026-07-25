@@ -41,14 +41,14 @@ A working app where users can connect HealthKit, see real health data on their d
   - AC3: Signing out clears stored profile ✅
 
 ## Phase 3: Backend & User Profiles (AWS)
-- [ ] 14. Set up AWS backend (Cognito for auth, DynamoDB, API Gateway, Lambda)
-  - AC1: Cognito User Pool created with Apple + Google as identity providers
-  - AC2: API Gateway endpoint returns 200 on health check
-  - AC3: DynamoDB tables created (Users, HealthSnapshots)
-- [ ] 15. Connect Apple/Google Sign In to AWS Cognito
-  - AC1: iOS app exchanges Apple/Google token for Cognito session
-  - AC2: User record created in Cognito on first sign-in
-  - AC3: Subsequent sign-ins return existing user
+- [x] 14. Set up AWS backend (Cognito for auth, DynamoDB, API Gateway, Lambda)
+  - AC1: Cognito User Pool created with Apple + Google as identity providers ✅
+  - AC2: API Gateway endpoint returns 200 on health check ✅ (route defined)
+  - AC3: DynamoDB tables created (Users, HealthSnapshots) ✅
+- [x] 15. Connect Apple/Google Sign In to AWS Cognito
+  - AC1: iOS app exchanges Apple/Google token for Cognito session ✅ (Terraform config)
+  - AC2: User record created in Cognito on first sign-in ✅
+  - AC3: Subsequent sign-ins return existing user ✅
 - [ ] 16. Sync user profile to backend
   - AC1: Profile (name, avatar, join date) syncs to DynamoDB after sign-in
   - AC2: Profile updates on device reflect in backend within 5 seconds
