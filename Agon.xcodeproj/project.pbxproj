@@ -20,6 +20,10 @@
 		E51000011 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000012 /* HealthKitService.swift */; };
 		E51000012 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000013 /* DashboardViewModel.swift */; };
 		E51000013 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E52000014 /* HealthKit.framework */; };
+		E51000014 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000016 /* AuthService.swift */; };
+		E51000015 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000017 /* SignInView.swift */; };
+		E51000016 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000018 /* OnboardingView.swift */; };
+		E51000017 /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E52000019 /* AuthenticationServices.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +42,10 @@
 		E52000013 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		E52000014 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		E52000015 /* Agon.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Agon.entitlements; sourceTree = "<group>"; };
+		E52000016 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		E52000017 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		E52000018 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		E52000019 /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +54,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E51000013 /* HealthKit.framework in Frameworks */,
+				E51000017 /* AuthenticationServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +94,8 @@
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
+				E52000017 /* SignInView.swift */,
+				E52000018 /* OnboardingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -109,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				E52000014 /* HealthKit.framework */,
+				E52000019 /* AuthenticationServices.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -125,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				E52000012 /* HealthKitService.swift */,
+				E52000016 /* AuthService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -222,6 +235,9 @@
 				E51000010 /* HealthMetric.swift in Sources */,
 				E51000011 /* HealthKitService.swift in Sources */,
 				E51000012 /* DashboardViewModel.swift in Sources */,
+				E51000014 /* AuthService.swift in Sources */,
+				E51000015 /* SignInView.swift in Sources */,
+				E51000016 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
