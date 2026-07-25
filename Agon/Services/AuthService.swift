@@ -53,10 +53,30 @@ final class AuthService: ObservableObject {
             .compactMap { $0 }
             .joined(separator: " ")
 
-        // Store the identity token for backend auth later
+        // Store the identity token for Cognito exchange
         if let identityToken = credential.identityToken,
            let tokenString = String(data: identityToken, encoding: .utf8) {
             saveToKeychain(key: "apple_id_token", value: tokenString)
+
+            // Exchange Apple token for Cognito session
+            Task {
+                do {
+                    try await CognitoService.shared.exchangeAppleToken(identityToken: tokenString)
+                } catch {
+                    print("Cognito exchange failed (will work offline): \(error)")
+                }
+
+                // Sync profile to backend
+                do {
+                    try await APIService.shared.updateProfile(
+                        displayName: fullName.isEmpty ? nil : fullName,
+                        email: email,
+                        provider: AuthProvider.apple.rawValue
+                    )
+                } catch {
+                    print("Profile sync failed (will retry later): \(error)")
+                }
+            }
         }
 
         let profile = UserProfile(
@@ -71,16 +91,23 @@ final class AuthService: ObservableObject {
     }
 
     func signInWithGoogle() async {
-        // TODO: Implement Google Sign-In via Cognito
-        // For now, this is a placeholder that will be connected to AWS Cognito
         isLoading = true
         errorMessage = nil
 
-        // Simulate network delay for UI testing
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        // Google Sign-In via Cognito Hosted UI
+        // This opens the Cognito hosted login page with Google as the provider
+        guard let url = URL(string: "\(CognitoConfig.hostedUIBaseURL)/oauth2/authorize?response_type=code&client_id=\(CognitoConfig.clientId)&redirect_uri=\(CognitoConfig.redirectUri)&identity_provider=Google&scope=openid+email+profile") else {
+            isLoading = false
+            errorMessage = "Failed to construct Google sign-in URL"
+            return
+        }
+
+        // Open in Safari — the redirect will come back via URL scheme
+        await MainActor.run {
+            UIApplication.shared.open(url)
+        }
 
         isLoading = false
-        errorMessage = "Google Sign-In will be connected to AWS Cognito in Phase 3"
     }
 
     func signOut() {
@@ -88,6 +115,10 @@ final class AuthService: ObservableObject {
         isAuthenticated = false
         removeFromKeychain(key: "apple_id_token")
         removeFromKeychain(key: "google_id_token")
+        removeFromKeychain(key: "cognito_access_token")
+        removeFromKeychain(key: "cognito_id_token")
+        removeFromKeychain(key: "cognito_refresh_token")
+        CognitoService.shared.clearTokens()
         UserDefaults.standard.removeObject(forKey: UserProfile.storageKey)
     }
 
@@ -97,6 +128,7 @@ final class AuthService: ObservableObject {
         currentUser = profile
         isAuthenticated = true
         errorMessage = nil
+        isLoading = false
         saveProfile(profile)
     }
 
@@ -115,6 +147,8 @@ final class AuthService: ObservableObject {
                     case .authorized:
                         self?.currentUser = profile
                         self?.isAuthenticated = true
+                        // Load stored Cognito tokens
+                        CognitoService.shared.loadStoredTokens()
                     case .revoked, .notFound:
                         self?.signOut()
                     default:
@@ -123,9 +157,9 @@ final class AuthService: ObservableObject {
                 }
             }
         } else {
-            // For Google, trust the stored session (Cognito will validate later)
             currentUser = profile
             isAuthenticated = true
+            CognitoService.shared.loadStoredTokens()
         }
     }
 
@@ -137,7 +171,7 @@ final class AuthService: ObservableObject {
 
     // MARK: - Keychain Helpers
 
-    private func saveToKeychain(key: String, value: String) {
+    func saveToKeychain(key: String, value: String) {
         let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -150,7 +184,7 @@ final class AuthService: ObservableObject {
         SecItemAdd(query as CFDictionary, nil)
     }
 
-    private func removeFromKeychain(key: String) {
+    func removeFromKeychain(key: String) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,

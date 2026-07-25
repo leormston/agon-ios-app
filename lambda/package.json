@@ -1,0 +1,13 @@
+{
+  "name": "agon-api",
+  "version": "1.0.0",
+  "description": "Agon Health API Lambda handler",
+  "main": "src/index.js",
+  "scripts": {
+    "zip": "zip -r lambda.zip src/ node_modules/ package.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "3.679.0",
+    "@aws-sdk/lib-dynamodb": "3.679.0"
+  }
+}

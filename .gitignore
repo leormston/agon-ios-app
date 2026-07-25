@@ -43,6 +43,10 @@ Thumbs.db
 *.key
 *.pem
 
+# Lambda
+lambda/node_modules/
+lambda/lambda.zip
+
 # Archives
 *.ipa
 *.dSYM.zip
