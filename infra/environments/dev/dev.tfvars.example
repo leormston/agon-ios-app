@@ -1,0 +1,9 @@
+# Copy this to dev.tfvars and fill in your values
+# NEVER commit the actual .tfvars file
+
+apple_services_id  = ""
+apple_team_id      = ""
+apple_key_id       = ""
+apple_private_key  = ""
+google_client_id   = ""
+google_client_secret = ""
