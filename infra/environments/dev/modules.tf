@@ -28,7 +28,8 @@ module "api_gateway" {
 module "lambda" {
   source = "../../modules/lambda"
 
-  environment        = var.environment
-  dynamodb_table_arn = module.dynamodb.users_table_arn
+  environment                = var.environment
+  dynamodb_table_arn         = module.dynamodb.users_table_arn
   health_snapshots_table_arn = module.dynamodb.health_snapshots_table_arn
+  lambda_zip_path            = var.lambda_zip_path
 }
