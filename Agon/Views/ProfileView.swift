@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var authService = AuthService.shared
 
     var body: some View {
         NavigationStack {
@@ -13,17 +14,20 @@ struct ProfileView: View {
                             .fill(Color.agonAccent.gradient)
                             .frame(width: 80, height: 80)
                             .overlay {
-                                Text("L")
+                                Text(userInitial)
                                     .font(.largeTitle.bold())
                                     .foregroundStyle(.white)
                             }
 
-                        Text("Louie")
+                        Text(displayName)
                             .font(.title2.bold())
                             .foregroundStyle(Color.agonTextPrimary)
-                        Text("Member since 2024")
-                            .font(.caption)
-                            .foregroundStyle(Color.agonTextSecondary)
+                        
+                        if let email = authService.currentUser?.email {
+                            Text(email)
+                                .font(.caption)
+                                .foregroundStyle(Color.agonTextSecondary)
+                        }
                     }
                     .padding(.top)
 
@@ -51,6 +55,23 @@ struct ProfileView: View {
                     }
                     .background(Color.agonSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    // Sign Out
+                    Button {
+                        authService.signOut()
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("Sign Out")
+                        }
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.agonSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
                 .padding()
             }
@@ -66,6 +87,15 @@ struct ProfileView: View {
                 }
             }
         }
+    }
+
+    private var userInitial: String {
+        let name = authService.currentUser?.displayName ?? "U"
+        return String(name.prefix(1)).uppercased()
+    }
+
+    private var displayName: String {
+        authService.currentUser?.displayName ?? "User"
     }
 }
 
