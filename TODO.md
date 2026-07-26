@@ -61,32 +61,32 @@ A working app where users can connect HealthKit, see real health data on their d
   - AC2: Response time under 1 second for up to 50 participants ✅
   - AC3: Current user's rank is highlighted in the response ✅
 
-## Phase 4: Challenges & Competition
-- [ ] 19. Create Challenge model (type, timeframe, participants, scoring)
-  - AC1: Challenge has a metric type, start/end date, and participant list
-  - AC2: Scoring formula defined (e.g. % improvement or absolute value)
-  - AC3: Challenge states: pending, active, completed
-- [ ] 20. Create challenge flow (pick metric, set duration, invite friends)
-  - AC1: User can select from available health metrics
-  - AC2: User can set duration (1 day, 1 week, 1 month)
-  - AC3: User can invite friends before starting
-  - AC4: Challenge created in backend on confirmation
-- [ ] 21. Join challenge flow
-  - AC1: User sees available challenges they've been invited to
-  - AC2: Tapping "Join" adds them as a participant
-  - AC3: Challenge appears in their Active Challenges list
-- [ ] 22. Scoring logic (compare progress within timeframe)
-  - AC1: Scores update daily based on health data
-  - AC2: Ranking reflects current standings accurately
-  - AC3: Tied scores handled gracefully
-- [ ] 23. Live leaderboard with real data
-  - AC1: Leaderboard shows all participants ranked by score
-  - AC2: Current user highlighted
-  - AC3: Leaderboard refreshes on pull-to-refresh
-- [ ] 24. Challenge completion & winner announcement
-  - AC1: Challenge auto-completes when end date is reached
-  - AC2: Winner shown on a results screen
-  - AC3: Push notification sent to all participants
+## Phase 4: Challenges & Competition ✅
+- [x] 19. Create Challenge model (type, timeframe, participants, scoring)
+  - AC1: Challenge has a metric type, start/end date, and participant list ✅
+  - AC2: Scoring formula defined (e.g. % improvement or absolute value) ✅
+  - AC3: Challenge states: pending, active, completed ✅
+- [x] 20. Create challenge flow (pick metric, set duration, invite friends)
+  - AC1: User can select from available health metrics ✅
+  - AC2: User can set duration (1 day, 1 week, 1 month) ✅
+  - AC3: User can invite friends before starting ✅
+  - AC4: Challenge created in backend on confirmation ✅
+- [x] 21. Join challenge flow
+  - AC1: User sees available challenges they've been invited to ✅
+  - AC2: Tapping "Join" adds them as a participant ✅
+  - AC3: Challenge appears in their Active Challenges list ✅
+- [x] 22. Scoring logic (compare progress within timeframe)
+  - AC1: Scores update daily based on health data ✅
+  - AC2: Ranking reflects current standings accurately ✅
+  - AC3: Tied scores handled gracefully ✅
+- [x] 23. Live leaderboard with real data
+  - AC1: Leaderboard shows all participants ranked by score ✅
+  - AC2: Current user highlighted ✅
+  - AC3: Leaderboard refreshes on pull-to-refresh ✅
+- [x] 24. Challenge completion & winner announcement
+  - AC1: Challenge auto-completes when end date is reached ✅
+  - AC2: Winner shown on a results screen (via challenge details)
+  - AC3: Push notification sent to all participants (Phase 5)
 
 ## Phase 5: Social
 - [ ] 25. Add friends (invite link or search)

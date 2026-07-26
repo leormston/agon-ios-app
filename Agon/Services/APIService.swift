@@ -68,6 +68,44 @@ final class APIService: ObservableObject {
         return try JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
 
+    // MARK: - Challenges
+
+    func createChallenge(metric: String, duration: String, invitedUserIds: [String]) async throws -> [String: Any]? {
+        let body: [String: Any] = [
+            "metric": metric,
+            "duration": duration,
+            "invitedUserIds": invitedUserIds,
+        ]
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await request(method: "POST", path: "/challenges", body: jsonData)
+
+        guard response.statusCode == 200 || response.statusCode == 201 else {
+            throw APIError.challengeCreationFailed
+        }
+
+        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
+
+    func getChallenges() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/challenges")
+        guard response.statusCode == 200 else { return [] }
+        return try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+    }
+
+    func joinChallenge(challengeId: String) async throws {
+        let (_, response) = try await request(method: "POST", path: "/challenges/\(challengeId)/join")
+
+        guard response.statusCode == 200 else {
+            throw APIError.challengeJoinFailed
+        }
+    }
+
+    func getChallengeDetails(challengeId: String) async throws -> [String: Any]? {
+        let (data, response) = try await request(method: "GET", path: "/challenges/\(challengeId)")
+        guard response.statusCode == 200 else { return nil }
+        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
+
     // MARK: - Networking
 
     private func request(
@@ -127,6 +165,8 @@ enum APIError: LocalizedError {
     case invalidResponse
     case profileUpdateFailed
     case syncFailed
+    case challengeCreationFailed
+    case challengeJoinFailed
 
     var errorDescription: String? {
         switch self {
@@ -135,6 +175,8 @@ enum APIError: LocalizedError {
         case .invalidResponse: return "Invalid response from server"
         case .profileUpdateFailed: return "Failed to update profile"
         case .syncFailed: return "Failed to sync health data"
+        case .challengeCreationFailed: return "Failed to create challenge"
+        case .challengeJoinFailed: return "Failed to join challenge"
         }
     }
 }

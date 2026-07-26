@@ -29,6 +29,8 @@ data "aws_iam_policy_document" "dynamodb_access" {
       "${var.dynamodb_table_arn}/index/*",
       var.health_snapshots_table_arn,
       "${var.health_snapshots_table_arn}/index/*",
+      var.challenges_table_arn,
+      "${var.challenges_table_arn}/index/*",
     ]
   }
 }
@@ -63,6 +65,7 @@ resource "aws_lambda_function" "api" {
       ENVIRONMENT            = var.environment
       USERS_TABLE            = "agon-${var.environment}-users"
       HEALTH_SNAPSHOTS_TABLE = "agon-${var.environment}-health-snapshots"
+      CHALLENGES_TABLE       = "agon-${var.environment}-challenges"
     }
   }
 

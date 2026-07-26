@@ -67,6 +67,30 @@ resource "aws_apigatewayv2_route" "get_leaderboard" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "create_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /challenges"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "list_challenges" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /challenges"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "join_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /challenges/{challengeId}/join"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /challenges/{challengeId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Stage
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id

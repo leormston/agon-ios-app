@@ -27,6 +27,9 @@
 		E51000018 /* CognitoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000020 /* CognitoService.swift */; };
 		E51000019 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000021 /* APIService.swift */; };
 		E51000020 /* LeaderboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000022 /* LeaderboardViewModel.swift */; };
+		E51000021 /* Challenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000023 /* Challenge.swift */; };
+		E51000022 /* ChallengesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000024 /* ChallengesViewModel.swift */; };
+		E51000023 /* CreateChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000025 /* CreateChallengeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +55,9 @@
 		E52000020 /* CognitoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CognitoService.swift; sourceTree = "<group>"; };
 		E52000021 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		E52000022 /* LeaderboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardViewModel.swift; sourceTree = "<group>"; };
+		E52000023 /* Challenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Challenge.swift; sourceTree = "<group>"; };
+		E52000024 /* ChallengesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesViewModel.swift; sourceTree = "<group>"; };
+		E52000025 /* CreateChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChallengeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +103,7 @@
 			children = (
 				E52000003 /* DashboardView.swift */,
 				E52000004 /* ChallengesView.swift */,
+				E52000025 /* CreateChallengeView.swift */,
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
@@ -135,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				E52000011 /* HealthMetric.swift */,
+				E52000023 /* Challenge.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -155,6 +163,7 @@
 			children = (
 				E52000013 /* DashboardViewModel.swift */,
 				E52000022 /* LeaderboardViewModel.swift */,
+				E52000024 /* ChallengesViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -250,6 +259,9 @@
 				E51000018 /* CognitoService.swift in Sources */,
 				E51000019 /* APIService.swift in Sources */,
 				E51000020 /* LeaderboardViewModel.swift in Sources */,
+				E51000021 /* Challenge.swift in Sources */,
+				E51000022 /* ChallengesViewModel.swift in Sources */,
+				E51000023 /* CreateChallengeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

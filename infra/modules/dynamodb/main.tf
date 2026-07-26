@@ -46,3 +46,30 @@ resource "aws_dynamodb_table" "health_snapshots" {
     Name = "agon-${var.environment}-health-snapshots"
   }
 }
+
+# Challenges table
+resource "aws_dynamodb_table" "challenges" {
+  name         = "agon-${var.environment}-challenges"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "challengeId"
+
+  attribute {
+    name = "challengeId"
+    type = "S"
+  }
+
+  attribute {
+    name = "creatorId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "creatorId-index"
+    hash_key        = "creatorId"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Name = "agon-${var.environment}-challenges"
+  }
+}
