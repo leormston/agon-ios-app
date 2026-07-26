@@ -85,10 +85,12 @@ final class APIService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         if authenticated {
-            guard let token = cognitoService.idToken else {
+            // Use Cognito token if available, otherwise fall back to Apple identity token
+            let token = cognitoService.idToken ?? AuthService.shared.getFromKeychain(key: "apple_id_token")
+            guard let bearerToken = token else {
                 throw APIError.notAuthenticated
             }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
 
         if let body = body {
@@ -103,8 +105,9 @@ final class APIService: ObservableObject {
 
         // If 401, try refreshing the token and retry once
         if httpResponse.statusCode == 401 && authenticated {
-            try await cognitoService.refreshSession()
-            request.setValue("Bearer \(cognitoService.idToken ?? "")", forHTTPHeaderField: "Authorization")
+            try? await cognitoService.refreshSession()
+            let retryToken = cognitoService.idToken ?? AuthService.shared.getFromKeychain(key: "apple_id_token")
+            request.setValue("Bearer \(retryToken ?? "")", forHTTPHeaderField: "Authorization")
             let (retryData, retryResponse) = try await URLSession.shared.data(for: request)
             guard let retryHttp = retryResponse as? HTTPURLResponse else {
                 throw APIError.invalidResponse

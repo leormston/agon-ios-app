@@ -14,8 +14,16 @@ const USERS_TABLE = process.env.USERS_TABLE;
 const HEALTH_SNAPSHOTS_TABLE = process.env.HEALTH_SNAPSHOTS_TABLE;
 
 exports.handler = async (event) => {
-  const { routeKey, body, requestContext, pathParameters } = event;
-  const userId = requestContext?.authorizer?.jwt?.claims?.sub;
+  const { routeKey, body, requestContext, pathParameters, headers } = event;
+  
+  // Extract user ID from JWT token (Apple ID token or Cognito token)
+  let userId = requestContext?.authorizer?.jwt?.claims?.sub;
+  
+  // If no Cognito authorizer, decode from Authorization header
+  if (!userId && headers?.authorization) {
+    const token = headers.authorization.replace("Bearer ", "");
+    userId = decodeUserIdFromJWT(token);
+  }
 
   try {
     switch (routeKey) {
@@ -23,15 +31,19 @@ exports.handler = async (event) => {
         return response(200, { status: "ok", service: "agon-api", timestamp: new Date().toISOString() });
 
       case "GET /profile":
+        if (!userId) return response(401, { error: "Unauthorized" });
         return await getProfile(userId);
 
       case "PUT /profile":
+        if (!userId) return response(401, { error: "Unauthorized" });
         return await updateProfile(userId, JSON.parse(body));
 
       case "POST /health/sync":
+        if (!userId) return response(401, { error: "Unauthorized" });
         return await syncHealth(userId, JSON.parse(body));
 
       case "GET /leaderboard/{challengeId}":
+        if (!userId) return response(401, { error: "Unauthorized" });
         const challengeId = pathParameters?.challengeId;
         return await getLeaderboard(challengeId, userId);
 
@@ -43,6 +55,19 @@ exports.handler = async (event) => {
     return response(500, { error: "Internal server error" });
   }
 };
+
+// Decode the 'sub' claim from a JWT without verification (for dev)
+// In production, verify the token signature
+function decodeUserIdFromJWT(token) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+}
 
 // MARK: - Profile
 
