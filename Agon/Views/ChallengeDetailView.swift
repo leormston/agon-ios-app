@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ChallengeDetailView: View {
     let challenge: Challenge
-    @State private var scores: [(name: String, score: Int, isCurrentUser: Bool)] = []
+    @State private var scores: [(name: String, score: Int, isCurrentUser: Bool, avatarUrl: String?)] = []
     @State private var isLoading = true
 
     var body: some View {
@@ -69,14 +69,32 @@ struct ChallengeDetailView: View {
                                     .frame(width: 24)
                                     .foregroundStyle(index < 3 ? Color.agonAccent : Color.agonTextSecondary)
 
-                                Circle()
-                                    .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
-                                    .frame(width: 32, height: 32)
-                                    .overlay {
-                                        Text(String(entry.name.prefix(1)))
-                                            .font(.caption.bold())
-                                            .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
+                                if let avatarUrl = entry.avatarUrl, let url = URL(string: avatarUrl) {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                    } placeholder: {
+                                        Circle()
+                                            .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
+                                            .overlay {
+                                                Text(String(entry.name.prefix(1)))
+                                                    .font(.caption.bold())
+                                                    .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
+                                            }
                                     }
+                                    .frame(width: 32, height: 32)
+                                    .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
+                                        .frame(width: 32, height: 32)
+                                        .overlay {
+                                            Text(String(entry.name.prefix(1)))
+                                                .font(.caption.bold())
+                                                .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
+                                        }
+                                }
 
                                 Text(entry.name)
                                     .font(.subheadline)
@@ -131,7 +149,8 @@ struct ChallengeDetailView: View {
                     (
                         name: p["displayName"] as? String ?? "User",
                         score: p["score"] as? Int ?? 0,
-                        isCurrentUser: (p["userId"] as? String) == currentUserId
+                        isCurrentUser: (p["userId"] as? String) == currentUserId,
+                        avatarUrl: p["avatarUrl"] as? String
                     )
                 }
             }
