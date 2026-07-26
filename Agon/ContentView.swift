@@ -39,12 +39,12 @@ struct ContentView: View {
                         .clipShape(Circle())
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    ProfileAvatarButton()
-                        .frame(width: 30, height: 30)
-                        .contentShape(Circle())
-                        .onTapGesture {
-                            showProfile = true
-                        }
+                    Button {
+                        showProfile = true
+                    } label: {
+                        ProfileAvatarButton()
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
