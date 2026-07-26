@@ -4,6 +4,8 @@
 <dict>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Agon reads your steps, distance, sleep, daylight exposure, and exercise data to show your daily health metrics and power challenges with friends.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Agon saves your health goals and challenge progress to Apple Health.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
