@@ -214,28 +214,6 @@ struct SectionHeader: View {
     }
 }
 
-struct CircularProgressView: View {
-    let progress: Double
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.agonBorder, lineWidth: 3)
-                .frame(width: 36, height: 36)
-
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(Color.agonAccent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .frame(width: 36, height: 36)
-                .rotationEffect(.degrees(-90))
-
-            Text("\(Int(progress * 100))%")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(Color.agonTextPrimary)
-        }
-    }
-}
-
 #Preview {
     NavigationStack {
         ChallengesView()
