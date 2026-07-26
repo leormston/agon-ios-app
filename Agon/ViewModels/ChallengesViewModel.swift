@@ -43,7 +43,10 @@ final class ChallengesViewModel: ObservableObject {
             invitedChallenges = invited
             errorMessage = nil
         } catch {
-            errorMessage = "Failed to load challenges"
+            // Only show error if we have no cached challenges
+            if activeChallenges.isEmpty && invitedChallenges.isEmpty {
+                errorMessage = "Failed to load challenges"
+            }
             print("Challenges error: \(error)")
         }
 

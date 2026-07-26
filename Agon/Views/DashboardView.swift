@@ -158,7 +158,7 @@ struct MetricCard: View {
                     Text(metric.type.unit)
                         .font(.caption)
                         .foregroundStyle(Color.agonTextSecondary)
-                } the 
+                }
                 Text(metric.type.title)
                     .font(.caption)
                     .foregroundStyle(Color.agonTextSecondary)
