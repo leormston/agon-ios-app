@@ -26,6 +26,7 @@
 		E51000017 /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E52000019 /* AuthenticationServices.framework */; };
 		E51000018 /* CognitoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000020 /* CognitoService.swift */; };
 		E51000019 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000021 /* APIService.swift */; };
+		E51000020 /* LeaderboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000022 /* LeaderboardViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +51,7 @@
 		E52000019 /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
 		E52000020 /* CognitoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CognitoService.swift; sourceTree = "<group>"; };
 		E52000021 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		E52000022 /* LeaderboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +154,7 @@
 			isa = PBXGroup;
 			children = (
 				E52000013 /* DashboardViewModel.swift */,
+				E52000022 /* LeaderboardViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -246,6 +249,7 @@
 				E51000016 /* OnboardingView.swift in Sources */,
 				E51000018 /* CognitoService.swift in Sources */,
 				E51000019 /* APIService.swift in Sources */,
+				E51000020 /* LeaderboardViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

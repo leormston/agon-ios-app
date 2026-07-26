@@ -4,6 +4,7 @@ const {
   GetCommand,
   PutCommand,
   QueryCommand,
+  ScanCommand,
 } = require("@aws-sdk/lib-dynamodb");
 
 const client = new DynamoDBClient({});
@@ -13,7 +14,7 @@ const USERS_TABLE = process.env.USERS_TABLE;
 const HEALTH_SNAPSHOTS_TABLE = process.env.HEALTH_SNAPSHOTS_TABLE;
 
 exports.handler = async (event) => {
-  const { routeKey, body, requestContext } = event;
+  const { routeKey, body, requestContext, pathParameters } = event;
   const userId = requestContext?.authorizer?.jwt?.claims?.sub;
 
   try {
@@ -31,7 +32,7 @@ exports.handler = async (event) => {
         return await syncHealth(userId, JSON.parse(body));
 
       case "GET /leaderboard/{challengeId}":
-        const challengeId = event.pathParameters?.challengeId;
+        const challengeId = pathParameters?.challengeId;
         return await getLeaderboard(challengeId, userId);
 
       default:
@@ -106,16 +107,65 @@ async function syncHealth(userId, data) {
 // MARK: - Leaderboard
 
 async function getLeaderboard(challengeId, currentUserId) {
-  // For now, return all health snapshots for today as a basic leaderboard
-  // This will be enhanced when challenges are built
   const today = new Date().toISOString().split("T")[0];
 
-  // Placeholder - in Phase 4 this will query by challenge participants
+  // Get all health snapshots for today (all users)
+  // In production, this would filter by challenge participants
+  const result = await dynamo.send(
+    new ScanCommand({
+      TableName: HEALTH_SNAPSHOTS_TABLE,
+      FilterExpression: "#d = :today",
+      ExpressionAttributeNames: { "#d": "date" },
+      ExpressionAttributeValues: { ":today": today },
+    })
+  );
+
+  const snapshots = result.Items || [];
+
+  // Get user profiles for display names
+  const userIds = [...new Set(snapshots.map((s) => s.userId))];
+  const users = {};
+
+  for (const uid of userIds) {
+    const userResult = await dynamo.send(
+      new GetCommand({
+        TableName: USERS_TABLE,
+        Key: { userId: uid },
+      })
+    );
+    if (userResult.Item) {
+      users[uid] = userResult.Item;
+    }
+  }
+
+  // Calculate scores (total steps as default metric for now)
+  const participants = snapshots
+    .map((snapshot) => {
+      const metrics = snapshot.metrics || {};
+      const score = metrics.steps || 0;
+      const user = users[snapshot.userId] || {};
+
+      return {
+        userId: snapshot.userId,
+        displayName: user.displayName || "Unknown",
+        score: Math.round(score),
+        metrics: {
+          steps: metrics.steps || 0,
+          exerciseMinutes: metrics.exerciseMinutes || 0,
+          distanceWalked: metrics.distanceWalked || 0,
+        },
+        isCurrentUser: snapshot.userId === currentUserId,
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map((p, index) => ({ ...p, rank: index + 1 }));
+
   return response(200, {
     challengeId,
     date: today,
-    participants: [],
-    currentUserId,
+    metric: "steps",
+    participants,
+    totalParticipants: participants.length,
   });
 }
 
