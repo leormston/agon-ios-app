@@ -7,6 +7,22 @@ struct ChallengesView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                // Create Challenge Button
+                Button {
+                    showCreateChallenge = true
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Create Challenge")
+                            .font(.subheadline.bold())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.agonAccent)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
                 // Active Challenges
                 SectionHeader(title: "Active Challenges", icon: "flame.fill")
 
@@ -54,16 +70,6 @@ struct ChallengesView: View {
         }
         .task {
             await viewModel.loadChallenges()
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showCreateChallenge = true
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(Color.agonAccent)
-                }
-            }
         }
         .sheet(isPresented: $showCreateChallenge) {
             CreateChallengeView(viewModel: viewModel)
