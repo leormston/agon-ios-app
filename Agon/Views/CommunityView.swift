@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CommunityView: View {
+    @StateObject private var viewModel = LeaderboardViewModel()
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -9,16 +11,39 @@ struct CommunityView: View {
                     HStack {
                         Image(systemName: "trophy.fill")
                             .foregroundStyle(Color.agonAccent)
-                        Text("This Week's Leaderboard")
+                        Text("Today's Leaderboard")
                             .font(.headline)
                             .foregroundStyle(Color.agonTextPrimary)
+                        Spacer()
+                        if viewModel.isLoading {
+                            ProgressView()
+                        }
                     }
 
-                    LeaderboardRow(rank: 1, name: "Sarah M.", points: 2_450, isCurrentUser: false)
-                    LeaderboardRow(rank: 2, name: "You", points: 2_180, isCurrentUser: true)
-                    LeaderboardRow(rank: 3, name: "James K.", points: 1_920, isCurrentUser: false)
-                    LeaderboardRow(rank: 4, name: "Priya R.", points: 1_845, isCurrentUser: false)
-                    LeaderboardRow(rank: 5, name: "Tom W.", points: 1_670, isCurrentUser: false)
+                    if viewModel.entries.isEmpty && !viewModel.isLoading {
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.3")
+                                .font(.title)
+                                .foregroundStyle(Color.agonTextSecondary)
+                            Text("No participants yet today")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.agonTextSecondary)
+                            Text("Your health data will appear here once synced")
+                                .font(.caption)
+                                .foregroundStyle(Color.agonTextSecondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                    } else {
+                        ForEach(viewModel.entries) { entry in
+                            LeaderboardRow(
+                                rank: entry.rank,
+                                name: entry.displayName,
+                                points: entry.score,
+                                isCurrentUser: entry.isCurrentUser
+                            )
+                        }
+                    }
                 }
                 .padding()
                 .background(Color.agonSurface)
@@ -30,9 +55,19 @@ struct CommunityView: View {
                         .font(.headline)
                         .foregroundStyle(Color.agonTextPrimary)
 
-                    ActivityFeedItem(name: "Sarah M.", action: "completed a 5K run", time: "2h ago")
-                    ActivityFeedItem(name: "James K.", action: "hit their step goal", time: "4h ago")
-                    ActivityFeedItem(name: "Priya R.", action: "started a new challenge", time: "6h ago")
+                    if viewModel.entries.isEmpty {
+                        Text("Activity will show here once friends join")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    } else {
+                        ForEach(viewModel.entries.prefix(3)) { entry in
+                            ActivityFeedItem(
+                                name: entry.displayName,
+                                action: "logged \(entry.score.formatted()) steps today",
+                                time: "Today"
+                            )
+                        }
+                    }
                 }
                 .padding()
                 .background(Color.agonSurface)
@@ -41,6 +76,12 @@ struct CommunityView: View {
             .padding()
         }
         .background(Color.agonBackground)
+        .refreshable {
+            await viewModel.refresh()
+        }
+        .task {
+            await viewModel.loadLeaderboard()
+        }
     }
 }
 
@@ -73,7 +114,7 @@ struct LeaderboardRow: View {
 
             Spacer()
 
-            Text("\(points) pts")
+            Text("\(points.formatted()) steps")
                 .font(.subheadline)
                 .foregroundStyle(Color.agonTextSecondary)
         }

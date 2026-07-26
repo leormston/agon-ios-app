@@ -44,35 +44,27 @@ resource "aws_apigatewayv2_route" "health_check" {
 }
 
 resource "aws_apigatewayv2_route" "get_profile" {
-  api_id             = aws_apigatewayv2_api.main.id
-  route_key          = "GET /profile"
-  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /profile"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "update_profile" {
-  api_id             = aws_apigatewayv2_api.main.id
-  route_key          = "PUT /profile"
-  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /profile"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "sync_health" {
-  api_id             = aws_apigatewayv2_api.main.id
-  route_key          = "POST /health/sync"
-  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /health/sync"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "get_leaderboard" {
-  api_id             = aws_apigatewayv2_api.main.id
-  route_key          = "GET /leaderboard/{challengeId}"
-  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /leaderboard/{challengeId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 # Stage

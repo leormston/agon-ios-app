@@ -21,6 +21,9 @@ struct AgonApp: App {
             .onOpenURL { url in
                 handleCallback(url: url)
             }
+            .task {
+                authService.restoreCognitoSession()
+            }
         }
     }
 

@@ -40,7 +40,7 @@ A working app where users can connect HealthKit, see real health data on their d
   - AC2: Profile data survives app restart ✅
   - AC3: Signing out clears stored profile ✅
 
-## Phase 3: Backend & User Profiles (AWS)
+## Phase 3: Backend & User Profiles (AWS) ✅
 - [x] 14. Set up AWS backend (Cognito for auth, DynamoDB, API Gateway, Lambda)
   - AC1: Cognito User Pool created with Apple + Google as identity providers ✅
   - AC2: API Gateway endpoint returns 200 on health check ✅
@@ -49,17 +49,17 @@ A working app where users can connect HealthKit, see real health data on their d
   - AC1: iOS app exchanges Apple/Google token for Cognito session ✅
   - AC2: User record created in Cognito on first sign-in ✅
   - AC3: Subsequent sign-ins return existing user ✅
-- [ ] 16. Sync user profile to backend
-  - AC1: Profile (name, avatar, join date) syncs to DynamoDB after sign-in
-  - AC2: Profile updates on device reflect in backend within 5 seconds
-- [ ] 17. Sync daily health snapshots to backend
-  - AC1: Today's health data sent to API on each app open
-  - AC2: Data stored in DynamoDB with user ID and date as keys
-  - AC3: Duplicate submissions for same day are idempotent (upsert)
-- [ ] 18. Fetch other users' data for leaderboards
-  - AC1: API returns list of users + scores for a given challenge
-  - AC2: Response time under 1 second for up to 50 participants
-  - AC3: Current user's rank is highlighted in the response
+- [x] 16. Sync user profile to backend
+  - AC1: Profile (name, avatar, join date) syncs to DynamoDB after sign-in ✅
+  - AC2: Profile updates on device reflect in backend within 5 seconds ✅
+- [x] 17. Sync daily health snapshots to backend
+  - AC1: Today's health data sent to API on each app open ✅
+  - AC2: Data stored in DynamoDB with user ID and date as keys ✅
+  - AC3: Duplicate submissions for same day are idempotent (upsert) ✅
+- [x] 18. Fetch other users' data for leaderboards
+  - AC1: API returns list of users + scores for a given challenge ✅
+  - AC2: Response time under 1 second for up to 50 participants ✅
+  - AC3: Current user's rank is highlighted in the response ✅
 
 ## Phase 4: Challenges & Competition
 - [ ] 19. Create Challenge model (type, timeframe, participants, scoring)

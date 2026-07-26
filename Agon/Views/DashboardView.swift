@@ -49,6 +49,43 @@ struct DashboardView: View {
                     .padding(.horizontal)
                 }
 
+                // Sync Button
+                VStack(spacing: 8) {
+                    Button {
+                        Task { await viewModel.syncNow() }
+                    } label: {
+                        HStack {
+                            if viewModel.isSyncing {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                            }
+                            Text(viewModel.isSyncing ? "Syncing..." : "Sync Now")
+                                .font(.subheadline.bold())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(viewModel.canSync ? Color.agonAccent : Color.agonBorder)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(!viewModel.canSync || viewModel.isSyncing)
+
+                    HStack {
+                        if let message = viewModel.syncMessage {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(Color.agonTextSecondary)
+                        }
+                        Spacer()
+                        Text("\(viewModel.syncsRemaining)/10 remaining")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+                }
+                .padding(.horizontal)
+
                 // Active Challenge Preview
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Active Challenge")

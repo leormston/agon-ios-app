@@ -39,6 +39,13 @@ final class AuthService: ObservableObject {
         loadStoredSession()
     }
 
+    /// Call after AuthService.shared is fully initialized (from AgonApp)
+    func restoreCognitoSession() {
+        if isAuthenticated {
+            CognitoService.shared.loadStoredTokens()
+        }
+    }
+
     // MARK: - Public API
 
     func signInWithApple(authorization: ASAuthorization) {
@@ -62,7 +69,7 @@ final class AuthService: ObservableObject {
             Task {
                 do {
                     try await CognitoService.shared.exchangeAppleToken(identityToken: tokenString)
-                } catch {
+                } catch {I can
                     print("Cognito exchange failed (will work offline): \(error)")
                 }
 
@@ -242,8 +249,6 @@ final class AuthService: ObservableObject {
                     case .authorized:
                         self?.currentUser = profile
                         self?.isAuthenticated = true
-                        // Load stored Cognito tokens
-                        CognitoService.shared.loadStoredTokens()
                     case .revoked, .notFound:
                         self?.signOut()
                     default:
@@ -254,7 +259,6 @@ final class AuthService: ObservableObject {
         } else {
             currentUser = profile
             isAuthenticated = true
-            CognitoService.shared.loadStoredTokens()
         }
     }
 
