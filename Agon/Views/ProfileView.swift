@@ -147,7 +147,7 @@ struct ProfileView: View {
             ? "Please describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.\n\nExpected behaviour:\n\nActual behaviour:\n"
             : "Please describe the feature you'd like:\n\n\nWhy would this be useful?\n\n"
 
-        let email = "feedback@agonhealth.app"
+        let email = "louie@louie.cloud"
         let urlString = "mailto:\(email)?subject=\(subject)&body=\(body)"
             .addingPercentEncoding(withAllowedCharacters: .urlString) ?? ""
 
