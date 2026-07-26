@@ -56,6 +56,49 @@ struct ProfileView: View {
                     .background(Color.agonSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
+                    // Feedback
+                    VStack(spacing: 0) {
+                        Button {
+                            openFeedback(type: "bug")
+                        } label: {
+                            HStack {
+                                Image(systemName: "ladybug.fill")
+                                    .foregroundStyle(.red)
+                                    .frame(width: 28)
+                                Text("Report a Bug")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.agonTextPrimary)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.agonTextSecondary)
+                            }
+                            .padding()
+                        }
+
+                        Divider().foregroundStyle(Color.agonBorder)
+
+                        Button {
+                            openFeedback(type: "feature")
+                        } label: {
+                            HStack {
+                                Image(systemName: "lightbulb.fill")
+                                    .foregroundStyle(.yellow)
+                                    .frame(width: 28)
+                                Text("Feature Request")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.agonTextPrimary)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.agonTextSecondary)
+                            }
+                            .padding()
+                        }
+                    }
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
                     // Sign Out
                     Button {
                         authService.signOut()
@@ -96,6 +139,21 @@ struct ProfileView: View {
 
     private var displayName: String {
         authService.currentUser?.displayName ?? "User"
+    }
+
+    private func openFeedback(type: String) {
+        let subject = type == "bug" ? "Bug Report — Agon Health" : "Feature Request — Agon Health"
+        let body = type == "bug"
+            ? "Please describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.\n\nExpected behaviour:\n\nActual behaviour:\n"
+            : "Please describe the feature you'd like:\n\n\nWhy would this be useful?\n\n"
+
+        let email = "feedback@agonhealth.app"
+        let urlString = "mailto:\(email)?subject=\(subject)&body=\(body)"
+            .addingPercentEncoding(withAllowedCharacters: .urlString) ?? ""
+
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url)
+        }
     }
 }
 
