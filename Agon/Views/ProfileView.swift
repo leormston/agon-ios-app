@@ -258,4 +258,5 @@ struct ProfileRow: View {
 
 #Preview {
     ProfileView()
+}
 
