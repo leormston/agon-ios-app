@@ -46,8 +46,6 @@ final class CognitoService: ObservableObject {
     @Published var accessToken: String?
     @Published var idToken: String?
 
-    private let authService = AuthService.shared
-
     // MARK: - Exchange Apple Token for Cognito Session
 
     func exchangeAppleToken(identityToken: String) async throws {
@@ -81,17 +79,17 @@ final class CognitoService: ObservableObject {
         idToken = tokenResponse.idToken
 
         // Store tokens securely
-        authService.saveToKeychain(key: "cognito_access_token", value: tokenResponse.accessToken)
-        authService.saveToKeychain(key: "cognito_id_token", value: tokenResponse.idToken)
+        AuthService.shared.saveToKeychain(key: "cognito_access_token", value: tokenResponse.accessToken)
+        AuthService.shared.saveToKeychain(key: "cognito_id_token", value: tokenResponse.idToken)
         if let refresh = tokenResponse.refreshToken {
-            authService.saveToKeychain(key: "cognito_refresh_token", value: refresh)
+            AuthService.shared.saveToKeychain(key: "cognito_refresh_token", value: refresh)
         }
     }
 
     // MARK: - Refresh Token
 
     func refreshSession() async throws {
-        guard let refreshToken = authService.getFromKeychain(key: "cognito_refresh_token") else {
+        guard let refreshToken = AuthService.shared.getFromKeychain(key: "cognito_refresh_token") else {
             throw CognitoError.noRefreshToken
         }
 
@@ -121,15 +119,15 @@ final class CognitoService: ObservableObject {
         accessToken = tokenResponse.accessToken
         idToken = tokenResponse.idToken
 
-        authService.saveToKeychain(key: "cognito_access_token", value: tokenResponse.accessToken)
-        authService.saveToKeychain(key: "cognito_id_token", value: tokenResponse.idToken)
+        AuthService.shared.saveToKeychain(key: "cognito_access_token", value: tokenResponse.accessToken)
+        AuthService.shared.saveToKeychain(key: "cognito_id_token", value: tokenResponse.idToken)
     }
 
     // MARK: - Load stored tokens
 
     func loadStoredTokens() {
-        accessToken = authService.getFromKeychain(key: "cognito_access_token")
-        idToken = authService.getFromKeychain(key: "cognito_id_token")
+        accessToken = AuthService.shared.getFromKeychain(key: "cognito_access_token")
+        idToken = AuthService.shared.getFromKeychain(key: "cognito_id_token")
     }
 
     // MARK: - Clear on sign out
