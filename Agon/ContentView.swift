@@ -42,9 +42,7 @@ struct ContentView: View {
                     Button {
                         showProfile = true
                     } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(Color.agonTextPrimary)
+                        ProfileAvatarButton()
                     }
                 }
             }
@@ -58,4 +56,42 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+}
+
+// MARK: - Profile Avatar Button
+
+struct ProfileAvatarButton: View {
+    @AppStorage("avatarUrl") private var avatarUrl = ""
+
+    var body: some View {
+        if !avatarUrl.isEmpty, let url = URL(string: avatarUrl) {
+            AsyncImage(url: url) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                initialCircle
+            }
+            .frame(width: 30, height: 30)
+            .clipShape(Circle())
+        } else {
+            initialCircle
+        }
+    }
+
+    private var initialCircle: some View {
+        Circle()
+            .fill(Color.agonAccent.gradient)
+            .frame(width: 30, height: 30)
+            .overlay {
+                Text(userInitial)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+            }
+    }
+
+    private var userInitial: String {
+        let name = AuthService.shared.currentUser?.displayName ?? "U"
+        return String(name.prefix(1)).uppercased()
+    }
 }
