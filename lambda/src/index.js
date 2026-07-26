@@ -448,6 +448,7 @@ async function getChallengeDetails(userId, challengeId) {
     scores.push({
       userId: participantId,
       displayName: user.displayName || "Unknown",
+      avatarUrl: user.avatarUrl || null,
       score: Math.round(totalScore),
       isCurrentUser: participantId === userId,
     });
