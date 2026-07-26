@@ -43,6 +43,7 @@ struct ContentView: View {
                         showProfile = true
                     } label: {
                         ProfileAvatarButton()
+                            .frame(width: 30, height: 30)
                     }
                 }
             }
