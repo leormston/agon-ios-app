@@ -60,6 +60,15 @@ final class APIService: ObservableObject {
         }
     }
 
+    // MARK: - Users
+
+    func getAllUsers() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/users")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        return (json as? [[String: Any]]) ?? ((json as? [String: Any])?["users"] as? [[String: Any]] ?? [])
+    }
+
     // MARK: - Leaderboard
 
     func getLeaderboard(challengeId: String) async throws -> [String: Any]? {

@@ -49,6 +49,12 @@ resource "aws_apigatewayv2_route" "get_profile" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "get_users" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /users"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "update_profile" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "PUT /profile"

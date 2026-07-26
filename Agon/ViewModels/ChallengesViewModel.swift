@@ -7,6 +7,7 @@ final class ChallengesViewModel: ObservableObject {
 
     @Published var activeChallenges: [Challenge] = []
     @Published var invitedChallenges: [Challenge] = []
+    @Published var friends: [FriendEntry] = []
     @Published var isLoading = false
     @Published var isCreating = false
     @Published var errorMessage: String?
@@ -18,6 +19,9 @@ final class ChallengesViewModel: ObservableObject {
     func loadChallenges() async {
         isLoading = true
         errorMessage = nil
+
+        // Load friends list in parallel
+        await loadFriends()
 
         do {
             let rawChallenges = try await apiService.getChallenges()
@@ -120,5 +124,24 @@ final class ChallengesViewModel: ObservableObject {
             participants: participants,
             createdAt: createdAt
         )
+    }
+
+    // MARK: - Friends
+
+    private func loadFriends() async {
+        do {
+            let users = try await apiService.getAllUsers()
+            let currentId = getCurrentUserId()
+            friends = users
+                .filter { $0["userId"] as? String != currentId }
+                .compactMap { dict in
+                    guard let id = dict["userId"] as? String else { return nil }
+                    let name = dict["displayName"] as? String ?? dict["email"] as? String ?? "User"
+                    return FriendEntry(id: id, name: name)
+                }
+        } catch {
+            print("Failed to load friends: \(error)")
+            friends = []
+        }
     }
 }

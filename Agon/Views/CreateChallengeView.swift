@@ -6,9 +6,17 @@ struct CreateChallengeView: View {
 
     @State private var selectedMetric: ChallengeMetric = .steps
     @State private var selectedDuration: ChallengeDuration = .oneWeek
-    @State private var friendUserId = ""
-    @State private var invitedUserIds: [String] = []
+    @State private var friendSearch = ""
+    @State private var invitedFriends: [FriendEntry] = []
     @State private var showOtherMetrics = false
+
+    var filteredFriends: [FriendEntry] {
+        let friends = viewModel.friends
+        if friendSearch.isEmpty {
+            return friends
+        }
+        return friends.filter { $0.name.localizedCaseInsensitiveContains(friendSearch) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -115,46 +123,52 @@ struct CreateChallengeView: View {
                             .font(.headline)
                             .foregroundStyle(Color.agonTextPrimary)
 
+                        // Search field
                         HStack {
-                            TextField("Enter user ID", text: $friendUserId)
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(Color.agonTextSecondary)
+                            TextField("Search friends...", text: $friendSearch)
                                 .textFieldStyle(.plain)
-                                .padding(12)
-                                .background(Color.agonSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
-
-                            Button {
-                                addFriend()
-                            } label: {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(Color.agonAccent)
-                            }
-                            .disabled(friendUserId.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
+                        .padding(12)
+                        .background(Color.agonSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                        if !invitedUserIds.isEmpty {
+                        // Friends list (filtered)
+                        if !filteredFriends.isEmpty {
                             VStack(spacing: 0) {
-                                ForEach(invitedUserIds, id: \.self) { userId in
-                                    HStack {
-                                        Image(systemName: "person.fill")
-                                            .foregroundStyle(Color.agonTextSecondary)
-                                        Text(userId)
-                                            .font(.subheadline)
-                                            .foregroundStyle(Color.agonTextPrimary)
-                                        Spacer()
-                                        Button {
-                                            invitedUserIds.removeAll { $0 == userId }
-                                        } label: {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundStyle(Color.agonTextSecondary)
+                                ForEach(filteredFriends, id: \.id) { friend in
+                                    let isInvited = invitedFriends.contains(where: { $0.id == friend.id })
+                                    Button {
+                                        if isInvited {
+                                            invitedFriends.removeAll { $0.id == friend.id }
+                                        } else {
+                                            invitedFriends.append(friend)
                                         }
+                                    } label: {
+                                        HStack {
+                                            Circle()
+                                                .fill(Color.agonBorder)
+                                                .frame(width: 32, height: 32)
+                                                .overlay {
+                                                    Text(String(friend.name.prefix(1)))
+                                                        .font(.caption.bold())
+                                                        .foregroundStyle(Color.agonTextPrimary)
+                                                }
+                                            Text(friend.name)
+                                                .font(.subheadline)
+                                                .foregroundStyle(Color.agonTextPrimary)
+                                            Spacer()
+                                            Image(systemName: isInvited ? "checkmark.circle.fill" : "plus.circle")
+                                                .foregroundStyle(isInvited ? Color.agonAccent : Color.agonTextSecondary)
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 10)
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
 
-                                    if userId != invitedUserIds.last {
+                                    if friend.id != filteredFriends.last?.id {
                                         Divider()
                                             .background(Color.agonBorder)
                                     }
@@ -162,6 +176,40 @@ struct CreateChallengeView: View {
                             }
                             .background(Color.agonSurface)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else if !friendSearch.isEmpty {
+                            Text("No friends found")
+                                .font(.caption)
+                                .foregroundStyle(Color.agonTextSecondary)
+                                .padding(.top, 4)
+                        }
+
+                        // Selected friends
+                        if !invitedFriends.isEmpty {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Selected (\(invitedFriends.count))")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.agonTextSecondary)
+
+                                FlowLayout(spacing: 8) {
+                                    ForEach(invitedFriends, id: \.id) { friend in
+                                        HStack(spacing: 4) {
+                                            Text(friend.name)
+                                                .font(.caption)
+                                            Button {
+                                                invitedFriends.removeAll { $0.id == friend.id }
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.caption)
+                                            }
+                                        }
+                                        .foregroundStyle(Color.agonTextPrimary)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.agonAccentTint)
+                                        .clipShape(Capsule())
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -171,7 +219,7 @@ struct CreateChallengeView: View {
                             let success = await viewModel.createChallenge(
                                 metric: selectedMetric,
                                 duration: selectedDuration,
-                                invitedUserIds: invitedUserIds
+                                invitedUserIds: invitedFriends.map { $0.id }
                             )
                             if success {
                                 dismiss()
@@ -217,12 +265,6 @@ struct CreateChallengeView: View {
         }
     }
 
-    private func addFriend() {
-        let trimmed = friendUserId.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, !invitedUserIds.contains(trimmed) else { return }
-        invitedUserIds.append(trimmed)
-        friendUserId = ""
-    }
 }
 
 // MARK: - Metric Row
@@ -249,6 +291,53 @@ struct MetricRow: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
+    }
+}
+
+// MARK: - Friend Entry
+
+struct FriendEntry: Identifiable {
+    let id: String
+    let name: String
+}
+
+// MARK: - Flow Layout (for selected friend chips)
+
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = arrange(proposal: proposal, subviews: subviews)
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = arrange(proposal: proposal, subviews: subviews)
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y), proposal: .unspecified)
+        }
+    }
+
+    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (positions: [CGPoint], size: CGSize) {
+        let maxWidth = proposal.width ?? .infinity
+        var positions: [CGPoint] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth && x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            positions.append(CGPoint(x: x, y: y))
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
+
+        return (positions, CGSize(width: maxWidth, height: y + rowHeight))
     }
 }
 

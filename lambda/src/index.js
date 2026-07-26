@@ -33,6 +33,9 @@ exports.handler = async (event) => {
       case "GET /health":
         return response(200, { status: "ok", service: "agon-api", timestamp: new Date().toISOString() });
 
+      case "GET /users":
+        return await getAllUsers();
+
       case "GET /profile":
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getProfile(userId);
@@ -89,6 +92,17 @@ function decodeUserIdFromJWT(token) {
 }
 
 // MARK: - Profile
+
+async function getAllUsers() {
+  const result = await dynamo.send(
+    new ScanCommand({
+      TableName: USERS_TABLE,
+      ProjectionExpression: "userId, displayName, email",
+    })
+  );
+
+  return response(200, { users: result.Items || [] });
+}
 
 async function getProfile(userId) {
   const result = await dynamo.send(
