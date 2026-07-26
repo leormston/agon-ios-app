@@ -144,7 +144,14 @@ final class APIService: ObservableObject {
     func getChallenges() async throws -> [[String: Any]] {
         let (data, response) = try await request(method: "GET", path: "/challenges")
         guard response.statusCode == 200 else { return [] }
-        return try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let array = json as? [[String: Any]] {
+            return array
+        }
+        if let dict = json as? [String: Any], let challenges = dict["challenges"] as? [[String: Any]] {
+            return challenges
+        }
+        return []
     }
 
     func joinChallenge(challengeId: String) async throws {
