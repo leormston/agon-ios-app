@@ -10,11 +10,13 @@ const {
 } = require("@aws-sdk/lib-dynamodb");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
 const { randomUUID } = require("crypto");
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
 const s3 = new S3Client({});
+const ses = new SESClient({});
 
 const USERS_TABLE = process.env.USERS_TABLE;
 const HEALTH_SNAPSHOTS_TABLE = process.env.HEALTH_SNAPSHOTS_TABLE;
@@ -105,6 +107,11 @@ exports.handler = async (event) => {
       case "GET /activity":
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getActivityFeed(userId);
+
+      // Feedback
+      case "POST /feedback":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await submitFeedback(userId, JSON.parse(body));
 
       default:
         return response(404, { error: "Route not found" });
@@ -675,6 +682,50 @@ async function getActivityFeed(userId) {
     .slice(0, 30);
 
   return response(200, { activity: allActivity });
+}
+
+// MARK: - Feedback
+
+async function submitFeedback(userId, data) {
+  const { type, title, description } = data;
+
+  if (!title || !description) {
+    return response(400, { error: "title and description are required" });
+  }
+
+  // Get user info for the email
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const userName = userResult.Item?.displayName || userResult.Item?.email || userId;
+
+  // Send email
+  try {
+    await ses.send(new SendEmailCommand({
+      Source: "noreply@agonhealth.app",
+      Destination: {
+        ToAddresses: ["louie@louie.cloud"],
+      },
+      Message: {
+        Subject: {
+          Data: `[Agon ${type}] ${title}`,
+        },
+        Body: {
+          Text: {
+            Data: `Type: ${type}\nFrom: ${userName} (${userId})\n\nTitle: ${title}\n\nDescription:\n${description}\n\nTimestamp: ${new Date().toISOString()}`,
+          },
+        },
+      },
+    }));
+  } catch (emailError) {
+    console.log("SES email failed (may not be configured):", emailError.message);
+    // Still save feedback even if email fails
+  }
+
+  // Also store in activity for record
+  await addActivity(userId, "feedback", `Submitted ${type}: ${title}`, null);
+
+  return response(200, { message: "Feedback submitted successfully" });
 }
 
 // MARK: - Helpers

@@ -60,6 +60,21 @@ final class APIService: ObservableObject {
         }
     }
 
+    // MARK: - Feedback
+
+    func submitFeedback(type: String, title: String, description: String) async throws {
+        let body: [String: Any] = [
+            "type": type,
+            "title": title,
+            "description": description,
+        ]
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        let (_, response) = try await request(method: "POST", path: "/feedback", body: jsonData)
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
     // MARK: - Users
 
     func getAvatarUploadUrl() async throws -> (uploadUrl: String, avatarUrl: String) {

@@ -140,6 +140,12 @@ resource "aws_apigatewayv2_route" "get_activity" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "submit_feedback" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /feedback"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Stage
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id

@@ -7,6 +7,7 @@ struct ProfileView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var avatarImage: Image?
     @State private var isUploadingAvatar = false
+    @State private var showFeedback = false
     @AppStorage("avatarUrl") private var avatarUrl = ""
 
     var body: some View {
@@ -106,44 +107,22 @@ struct ProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     // Feedback
-                    VStack(spacing: 0) {
-                        Button {
-                            openFeedback(type: "bug")
-                        } label: {
-                            HStack {
-                                Image(systemName: "ladybug.fill")
-                                    .foregroundStyle(.red)
-                                    .frame(width: 28)
-                                Text("Report a Bug")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.agonTextPrimary)
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.agonTextSecondary)
-                            }
-                            .padding()
+                    Button {
+                        showFeedback = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                                .foregroundStyle(Color.agonAccent)
+                                .frame(width: 28)
+                            Text("Report Bug / Request Feature")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.agonTextPrimary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(Color.agonTextSecondary)
                         }
-
-                        Divider().foregroundStyle(Color.agonBorder)
-
-                        Button {
-                            openFeedback(type: "feature")
-                        } label: {
-                            HStack {
-                                Image(systemName: "lightbulb.fill")
-                                    .foregroundStyle(.yellow)
-                                    .frame(width: 28)
-                                Text("Feature Request")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.agonTextPrimary)
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.agonTextSecondary)
-                            }
-                            .padding()
-                        }
+                        .padding()
                     }
                     .background(Color.agonSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -182,6 +161,9 @@ struct ProfileView: View {
                 Task {
                     await handlePhotoSelection()
                 }
+            }
+            .sheet(isPresented: $showFeedback) {
+                FeedbackView()
             }
         }
     }
@@ -233,20 +215,6 @@ struct ProfileView: View {
         authService.currentUser?.displayName ?? "User"
     }
 
-    private func openFeedback(type: String) {
-        let subject = type == "bug" ? "Bug Report - Agon Health" : "Feature Request - Agon Health"
-        let body = type == "bug"
-            ? "Please describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.\n\nExpected behaviour:\n\nActual behaviour:\n"
-            : "Please describe the feature you'd like:\n\n\nWhy would this be useful?\n\n"
-
-        let email = "louie@louie.cloud"
-        let urlString = "mailto:\(email)?subject=\(subject)&body=\(body)"
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url)
-        }
-    }
 }
 
 struct StatItem: View {

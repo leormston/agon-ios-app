@@ -35,6 +35,7 @@
 		E51000026 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000028 /* WelcomeView.swift */; };
 		E51000027 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000029 /* NetworkMonitor.swift */; };
 		E51000028 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000030 /* SharedComponents.swift */; };
+		E51000029 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000031 /* FeedbackView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +69,7 @@
 		E52000028 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E52000029 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		E52000030 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
+		E52000031 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +119,7 @@
 				E52000025 /* CreateChallengeView.swift */,
 				E52000027 /* AddFriendView.swift */,
 				E52000028 /* WelcomeView.swift */,
+				E52000031 /* FeedbackView.swift */,
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
@@ -290,6 +293,7 @@
 				E51000026 /* WelcomeView.swift in Sources */,
 				E51000027 /* NetworkMonitor.swift in Sources */,
 				E51000028 /* SharedComponents.swift in Sources */,
+				E51000029 /* FeedbackView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
