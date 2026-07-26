@@ -265,13 +265,23 @@ async function createChallenge(userId, data) {
     return response(400, { error: "metric and duration are required" });
   }
 
-  const validMetrics = ["steps", "exerciseMinutes", "distanceWalked"];
+  const validMetrics = ["steps", "exerciseMinutes", "distanceWalked", "distanceRan", "totalSleep", "timeInDaylight"];
   if (!validMetrics.includes(metric)) {
     return response(400, { error: `metric must be one of: ${validMetrics.join(", ")}` });
   }
 
   const startDate = new Date().toISOString();
-  const endDate = new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString();
+
+  // Parse duration string to days
+  let durationDays;
+  switch (duration) {
+    case "1d": durationDays = 1; break;
+    case "1w": durationDays = 7; break;
+    case "1m": durationDays = 30; break;
+    default: durationDays = 7;
+  }
+
+  const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
   const item = {
     challengeId: randomUUID(),
