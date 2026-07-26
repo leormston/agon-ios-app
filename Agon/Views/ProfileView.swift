@@ -1,8 +1,13 @@
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var authService = AuthService.shared
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var avatarImage: Image?
+    @State private var isUploadingAvatar = false
+    @AppStorage("avatarUrl") private var avatarUrl = ""
 
     var body: some View {
         NavigationStack {
@@ -10,14 +15,58 @@ struct ProfileView: View {
                 VStack(spacing: 24) {
                     // Avatar and Name
                     VStack(spacing: 12) {
-                        Circle()
-                            .fill(Color.agonAccent.gradient)
-                            .frame(width: 80, height: 80)
-                            .overlay {
-                                Text(userInitial)
-                                    .font(.largeTitle.bold())
-                                    .foregroundStyle(.white)
+                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                            ZStack(alignment: .bottomTrailing) {
+                                if let avatarImage {
+                                    avatarImage
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 80, height: 80)
+                                        .clipShape(Circle())
+                                } else if !avatarUrl.isEmpty, let url = URL(string: avatarUrl) {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                    } placeholder: {
+                                        Circle()
+                                            .fill(Color.agonAccent.gradient)
+                                            .overlay {
+                                                Text(userInitial)
+                                                    .font(.largeTitle.bold())
+                                                    .foregroundStyle(.white)
+                                            }
+                                    }
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(Color.agonAccent.gradient)
+                                        .frame(width: 80, height: 80)
+                                        .overlay {
+                                            Text(userInitial)
+                                                .font(.largeTitle.bold())
+                                                .foregroundStyle(.white)
+                                        }
+                                }
+
+                                // Camera badge
+                                Circle()
+                                    .fill(Color.agonSurface)
+                                    .frame(width: 26, height: 26)
+                                    .overlay {
+                                        Image(systemName: "camera.fill")
+                                            .font(.caption2)
+                                            .foregroundStyle(Color.agonTextPrimary)
+                                    }
+                                    .shadow(radius: 2)
                             }
+                        }
+
+                        if isUploadingAvatar {
+                            ProgressView("Uploading...")
+                                .font(.caption)
+                        }
 
                         Text(displayName)
                             .font(.title2.bold())
@@ -129,7 +178,50 @@ struct ProfileView: View {
                     .foregroundStyle(Color.agonAccent)
                 }
             }
+            .onChange(of: selectedPhoto) {
+                Task {
+                    await handlePhotoSelection()
+                }
+            }
         }
+    }
+
+    private func handlePhotoSelection() async {
+        guard let selectedPhoto else { return }
+
+        isUploadingAvatar = true
+
+        do {
+            // Load the image data
+            guard let data = try await selectedPhoto.loadTransferable(type: Data.self) else {
+                isUploadingAvatar = false
+                return
+            }
+
+            // Compress to JPEG
+            guard let uiImage = UIImage(data: data),
+                  let jpegData = uiImage.jpegData(compressionQuality: 0.7) else {
+                isUploadingAvatar = false
+                return
+            }
+
+            // Show preview immediately
+            avatarImage = Image(uiImage: uiImage)
+
+            // Get presigned URL from backend
+            let urls = try await APIService.shared.getAvatarUploadUrl()
+
+            // Upload to S3
+            try await APIService.shared.uploadImageToS3(presignedUrl: urls.uploadUrl, imageData: jpegData)
+
+            // Save URL locally
+            avatarUrl = urls.avatarUrl
+
+        } catch {
+            print("Avatar upload failed: \(error)")
+        }
+
+        isUploadingAvatar = false
     }
 
     private var userInitial: String {
@@ -171,7 +263,7 @@ struct StatItem: View {
                 .foregroundStyle(Color.agonTextSecondary)
         }
         .frame(maxWidth: .infinity)
-    }
+    }I wan
 }
 
 struct ProfileRow: View {

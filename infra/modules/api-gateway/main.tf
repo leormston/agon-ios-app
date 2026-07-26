@@ -61,6 +61,12 @@ resource "aws_apigatewayv2_route" "update_profile" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "upload_avatar" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /profile/avatar"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "sync_health" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /health/sync"

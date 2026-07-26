@@ -62,6 +62,34 @@ final class APIService: ObservableObject {
 
     // MARK: - Users
 
+    func getAvatarUploadUrl() async throws -> (uploadUrl: String, avatarUrl: String) {
+        let (data, response) = try await request(method: "POST", path: "/profile/avatar")
+        guard response.statusCode == 200,
+              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let uploadUrl = json["uploadUrl"] as? String,
+              let avatarUrl = json["avatarUrl"] as? String else {
+            throw APIError.profileUpdateFailed
+        }
+        return (uploadUrl, avatarUrl)
+    }
+
+    func uploadImageToS3(presignedUrl: String, imageData: Data) async throws {
+        guard let url = URL(string: presignedUrl) else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        request.httpBody = imageData
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
+    // MARK: - Users
+
     func getAllUsers() async throws -> [[String: Any]] {
         let (data, response) = try await request(method: "GET", path: "/users")
         guard response.statusCode == 200 else { return [] }
