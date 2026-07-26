@@ -149,7 +149,7 @@ struct ProfileView: View {
 
         let email = "louie@louie.cloud"
         let urlString = "mailto:\(email)?subject=\(subject)&body=\(body)"
-            .addingPercentEncoding(withAllowedCharacters: .urlString) ?? ""
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url)
