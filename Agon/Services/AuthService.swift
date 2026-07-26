@@ -109,7 +109,7 @@ final class AuthService: ObservableObject {
             return
         }
 
-        // Open in Safari — the redirect will come back via URL scheme
+        // Open in Safari - the redirect will come back via URL scheme
         await MainActor.run {
             UIApplication.shared.open(url)
         }

@@ -89,7 +89,7 @@ final class HealthKitService: ObservableObject {
     func fetchSleep(for date: Date = .now) async -> Double {
         guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else { return 0 }
 
-        // Sleep is logged overnight — look from 6pm previous day to end of current day
+        // Sleep is logged overnight - look from 6pm previous day to end of current day
         let calendar = Calendar.current
         let endOfDay = calendar.startOfDay(for: date).addingTimeInterval(86400)
         let startOfPreviousEvening = calendar.startOfDay(for: date).addingTimeInterval(-6 * 3600)

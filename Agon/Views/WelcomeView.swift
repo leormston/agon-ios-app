@@ -8,7 +8,7 @@ struct WelcomeView: View {
         WelcomePage(
             icon: "heart.text.square.fill",
             title: "Track Your Health",
-            description: "Monitor steps, sleep, exercise and more — all in one place. Syncs automatically with Apple Health.",
+            description: "Monitor steps, sleep, exercise and more - all in one place. Syncs automatically with Apple Health.",
             color: .agonAccent
         ),
         WelcomePage(

@@ -43,9 +43,9 @@ final class ChallengesViewModel: ObservableObject {
             invitedChallenges = invited
             errorMessage = nil
         } catch is CancellationError {
-            // Ignore — task was cancelled by SwiftUI (e.g. view disappeared)
+            // Ignore - task was cancelled by SwiftUI (e.g. view disappeared)
         } catch let error as NSError where error.code == -999 {
-            // Ignore — URLSession request cancelled
+            // Ignore - URLSession request cancelled
         } catch {
             if activeChallenges.isEmpty && invitedChallenges.isEmpty {
                 errorMessage = "Failed to load challenges"

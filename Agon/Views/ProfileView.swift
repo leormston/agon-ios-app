@@ -82,9 +82,9 @@ struct ProfileView: View {
 
                     // Stats
                     HStack(spacing: 0) {
-                        StatItem(value: "42", label: "Day Streak")
-                        StatItem(value: "12", label: "Challenges")
-                        StatItem(value: "3", label: "Wins")
+                        StatItem(value: "-", label: "Day Streak")
+                        StatItem(value: "-", label: "Challenges")
+                        StatItem(value: "-", label: "Wins")
                     }
                     .padding()
                     .background(Color.agonSurface)
@@ -234,7 +234,7 @@ struct ProfileView: View {
     }
 
     private func openFeedback(type: String) {
-        let subject = type == "bug" ? "Bug Report — Agon Health" : "Feature Request — Agon Health"
+        let subject = type == "bug" ? "Bug Report - Agon Health" : "Feature Request - Agon Health"
         let body = type == "bug"
             ? "Please describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.\n\nExpected behaviour:\n\nActual behaviour:\n"
             : "Please describe the feature you'd like:\n\n\nWhy would this be useful?\n\n"
@@ -263,7 +263,7 @@ struct StatItem: View {
                 .foregroundStyle(Color.agonTextSecondary)
         }
         .frame(maxWidth: .infinity)
-    }I wan
+    }
 }
 
 struct ProfileRow: View {

@@ -149,7 +149,7 @@ final class DashboardViewModel: ObservableObject {
             let used = UserDefaults.standard.integer(forKey: syncCountKey)
             syncsRemaining = max(0, maxDailySyncs - used)
         } else {
-            // New day — reset
+            // New day - reset
             UserDefaults.standard.set(0, forKey: syncCountKey)
             UserDefaults.standard.set(today, forKey: syncDateKey)
             syncsRemaining = maxDailySyncs
