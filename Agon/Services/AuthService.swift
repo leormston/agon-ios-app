@@ -69,7 +69,7 @@ final class AuthService: ObservableObject {
             Task {
                 do {
                     try await CognitoService.shared.exchangeAppleToken(identityToken: tokenString)
-                } catch {I can
+                } catch {
                     print("Cognito exchange failed (will work offline): \(error)")
                 }
 

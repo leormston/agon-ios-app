@@ -49,6 +49,12 @@ resource "aws_apigatewayv2_route" "get_profile" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "get_users" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /users"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "update_profile" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "PUT /profile"
@@ -64,6 +70,30 @@ resource "aws_apigatewayv2_route" "sync_health" {
 resource "aws_apigatewayv2_route" "get_leaderboard" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /leaderboard/{challengeId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "create_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /challenges"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "list_challenges" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /challenges"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "join_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /challenges/{challengeId}/join"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /challenges/{challengeId}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 

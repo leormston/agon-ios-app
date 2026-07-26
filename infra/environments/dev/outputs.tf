@@ -22,3 +22,8 @@ output "health_snapshots_table_name" {
   description = "DynamoDB Health Snapshots table name"
   value       = module.dynamodb.health_snapshots_table_name
 }
+
+output "challenges_table_name" {
+  description = "DynamoDB Challenges table name"
+  value       = module.dynamodb.challenges_table_name
+}
