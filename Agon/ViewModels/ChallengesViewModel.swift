@@ -20,9 +20,6 @@ final class ChallengesViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        // Load friends list in parallel
-        await loadFriends()
-
         do {
             let rawChallenges = try await apiService.getChallenges()
             let currentUserId = getCurrentUserId()
@@ -48,6 +45,9 @@ final class ChallengesViewModel: ObservableObject {
             errorMessage = "Failed to load challenges"
             print("Challenges error: \(error)")
         }
+
+        // Load friends separately (non-blocking)
+        await loadFriends()
 
         isLoading = false
     }
