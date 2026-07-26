@@ -3,12 +3,15 @@ import SwiftUI
 @main
 struct AgonApp: App {
     @StateObject private var authService = AuthService.shared
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some Scene {
         WindowGroup {
             Group {
-                if !authService.isAuthenticated {
+                if !hasSeenWelcome {
+                    WelcomeView()
+                } else if !authService.isAuthenticated {
                     SignInView()
                 } else if !hasCompletedOnboarding {
                     OnboardingView()
@@ -16,6 +19,7 @@ struct AgonApp: App {
                     ContentView()
                 }
             }
+            .animation(.easeInOut, value: hasSeenWelcome)
             .animation(.easeInOut, value: authService.isAuthenticated)
             .animation(.easeInOut, value: hasCompletedOnboarding)
             .onOpenURL { url in

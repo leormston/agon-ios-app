@@ -32,6 +32,9 @@
 		E51000023 /* CreateChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000025 /* CreateChallengeView.swift */; };
 		E51000024 /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000026 /* FriendsViewModel.swift */; };
 		E51000025 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000027 /* AddFriendView.swift */; };
+		E51000026 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000028 /* WelcomeView.swift */; };
+		E51000027 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000029 /* NetworkMonitor.swift */; };
+		E51000028 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000030 /* SharedComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +65,9 @@
 		E52000025 /* CreateChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChallengeView.swift; sourceTree = "<group>"; };
 		E52000026 /* FriendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
 		E52000027 /* AddFriendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriendView.swift; sourceTree = "<group>"; };
+		E52000028 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		E52000029 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		E52000030 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +102,7 @@
 				E54000007 /* Models */,
 				E54000008 /* Services */,
 				E54000009 /* ViewModels */,
+				E5400000A /* Components */,
 				E54000004 /* Utilities */,
 				E52000008 /* Assets.xcassets */,
 			);
@@ -109,6 +116,7 @@
 				E52000004 /* ChallengesView.swift */,
 				E52000025 /* CreateChallengeView.swift */,
 				E52000027 /* AddFriendView.swift */,
+				E52000028 /* WelcomeView.swift */,
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
@@ -159,6 +167,7 @@
 				E52000016 /* AuthService.swift */,
 				E52000020 /* CognitoService.swift */,
 				E52000021 /* APIService.swift */,
+				E52000029 /* NetworkMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -172,6 +181,14 @@
 				E52000026 /* FriendsViewModel.swift */,
 			);
 			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		E5400000A /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				E52000030 /* SharedComponents.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -270,6 +287,9 @@
 				E51000023 /* CreateChallengeView.swift in Sources */,
 				E51000024 /* FriendsViewModel.swift in Sources */,
 				E51000025 /* AddFriendView.swift in Sources */,
+				E51000026 /* WelcomeView.swift in Sources */,
+				E51000027 /* NetworkMonitor.swift in Sources */,
+				E51000028 /* SharedComponents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

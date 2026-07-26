@@ -6,26 +6,30 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            TabView(selection: $selectedTab) {
-                DashboardView()
-                    .tag(0)
-                    .tabItem {
-                        Label("Dashboard", systemImage: "heart.text.square")
-                    }
+            VStack(spacing: 0) {
+                OfflineBanner()
 
-                ChallengesView()
-                    .tag(1)
-                    .tabItem {
-                        Label("Challenges", systemImage: "trophy")
-                    }
+                TabView(selection: $selectedTab) {
+                    DashboardView()
+                        .tag(0)
+                        .tabItem {
+                            Label("Dashboard", systemImage: "heart.text.square")
+                        }
 
-                CommunityView()
-                    .tag(2)
-                    .tabItem {
-                        Label("Friends", systemImage: "person.2")
-                    }
+                    ChallengesView()
+                        .tag(1)
+                        .tabItem {
+                            Label("Challenges", systemImage: "trophy")
+                        }
+
+                    CommunityView()
+                        .tag(2)
+                        .tabItem {
+                            Label("Friends", systemImage: "person.2")
+                        }
+                }
+                .tint(Color.agonAccent)
             }
-            .tint(Color.agonAccent)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Image("AgonLogo")
