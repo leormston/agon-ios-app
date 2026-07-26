@@ -8,6 +8,7 @@ struct CreateChallengeView: View {
     @State private var selectedDuration: ChallengeDuration = .oneWeek
     @State private var friendUserId = ""
     @State private var invitedUserIds: [String] = []
+    @State private var showOtherMetrics = false
 
     var body: some View {
         NavigationStack {
@@ -15,32 +16,18 @@ struct CreateChallengeView: View {
                 VStack(spacing: 24) {
                     // Metric Picker
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Metric")
+                        Text("Popular Metrics")
                             .font(.headline)
                             .foregroundStyle(Color.agonTextPrimary)
 
                         VStack(spacing: 0) {
-                            ForEach(ChallengeMetric.allCases) { metric in
-                                Button {
+                            ForEach(ChallengeMetric.popular) { metric in
+                                MetricRow(metric: metric, isSelected: selectedMetric == metric) {
                                     selectedMetric = metric
-                                } label: {
-                                    HStack {
-                                        Image(systemName: metric.icon)
-                                            .frame(width: 24)
-                                            .foregroundStyle(Color.agonAccent)
-                                        Text(metric.title)
-                                            .foregroundStyle(Color.agonTextPrimary)
-                                        Spacer()
-                                        if selectedMetric == metric {
-                                            Image(systemName: "checkmark")
-                                                .foregroundStyle(Color.agonAccent)
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    showOtherMetrics = false
                                 }
 
-                                if metric != ChallengeMetric.allCases.last {
+                                if metric != ChallengeMetric.popular.last {
                                     Divider()
                                         .background(Color.agonBorder)
                                 }
@@ -48,6 +35,44 @@ struct CreateChallengeView: View {
                         }
                         .background(Color.agonSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                        // Other Metrics
+                        Button {
+                            withAnimation {
+                                showOtherMetrics.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text("Other Metrics")
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(Color.agonTextPrimary)
+                                Spacer()
+                                Image(systemName: showOtherMetrics ? "chevron.up" : "chevron.down")
+                                    .foregroundStyle(Color.agonTextSecondary)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.agonSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+
+                        if showOtherMetrics {
+                            VStack(spacing: 0) {
+                                ForEach(ChallengeMetric.other) { metric in
+                                    MetricRow(metric: metric, isSelected: selectedMetric == metric) {
+                                        selectedMetric = metric
+                                    }
+
+                                    if metric != ChallengeMetric.other.last {
+                                        Divider()
+                                            .background(Color.agonBorder)
+                                    }
+                                }
+                            }
+                            .background(Color.agonSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                     }
 
                     // Duration Picker
@@ -197,6 +222,33 @@ struct CreateChallengeView: View {
         guard !trimmed.isEmpty, !invitedUserIds.contains(trimmed) else { return }
         invitedUserIds.append(trimmed)
         friendUserId = ""
+    }
+}
+
+// MARK: - Metric Row
+
+struct MetricRow: View {
+    let metric: ChallengeMetric
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: metric.icon)
+                    .frame(width: 24)
+                    .foregroundStyle(Color.agonAccent)
+                Text(metric.title)
+                    .foregroundStyle(Color.agonTextPrimary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.agonAccent)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
     }
 }
 

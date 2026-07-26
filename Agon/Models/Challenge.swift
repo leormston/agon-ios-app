@@ -6,6 +6,9 @@ enum ChallengeMetric: String, CaseIterable, Identifiable {
     case steps
     case exerciseMinutes
     case distanceWalked
+    case distanceRan
+    case totalSleep
+    case timeInDaylight
 
     var id: String { rawValue }
 
@@ -14,6 +17,9 @@ enum ChallengeMetric: String, CaseIterable, Identifiable {
         case .steps: return "Steps"
         case .exerciseMinutes: return "Exercise Minutes"
         case .distanceWalked: return "Distance Walked"
+        case .distanceRan: return "Distance Ran"
+        case .totalSleep: return "Sleep"
+        case .timeInDaylight: return "Time in Daylight"
         }
     }
 
@@ -22,6 +28,9 @@ enum ChallengeMetric: String, CaseIterable, Identifiable {
         case .steps: return "figure.walk"
         case .exerciseMinutes: return "flame.fill"
         case .distanceWalked: return "figure.walk.motion"
+        case .distanceRan: return "figure.run"
+        case .totalSleep: return "moon.fill"
+        case .timeInDaylight: return "sun.max.fill"
         }
     }
 
@@ -30,7 +39,18 @@ enum ChallengeMetric: String, CaseIterable, Identifiable {
         case .steps: return "steps"
         case .exerciseMinutes: return "min"
         case .distanceWalked: return "km"
+        case .distanceRan: return "km"
+        case .totalSleep: return "hrs"
+        case .timeInDaylight: return "min"
         }
+    }
+
+    static var popular: [ChallengeMetric] {
+        [.steps, .exerciseMinutes, .distanceWalked]
+    }
+
+    static var other: [ChallengeMetric] {
+        [.distanceRan, .totalSleep, .timeInDaylight]
     }
 }
 
