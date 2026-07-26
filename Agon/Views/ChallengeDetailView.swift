@@ -125,7 +125,7 @@ struct ChallengeDetailView: View {
                 return
             }
 
-            if let participants = data["participants"] as? [[String: Any]] {
+            if let participants = data["scores"] as? [[String: Any]] {
                 let currentUserId = AuthService.shared.currentUser?.id ?? ""
                 scores = participants.map { p in
                     (
