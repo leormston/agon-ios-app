@@ -38,7 +38,10 @@ struct ChallengesView: View {
                     )
                 } else {
                     ForEach(viewModel.activeChallenges) { challenge in
-                        ActiveChallengeCard(challenge: challenge)
+                        NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                            ActiveChallengeCard(challenge: challenge)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
