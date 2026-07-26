@@ -110,6 +110,101 @@ final class AuthService: ObservableObject {
         isLoading = false
     }
 
+    func handleGoogleCallback(authorizationCode: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Exchange auth code for Cognito tokens
+            let tokens = try await exchangeCodeForTokens(code: authorizationCode)
+
+            // Store tokens
+            saveToKeychain(key: "cognito_access_token", value: tokens.accessToken)
+            saveToKeychain(key: "cognito_id_token", value: tokens.idToken)
+            if let refresh = tokens.refreshToken {
+                saveToKeychain(key: "cognito_refresh_token", value: refresh)
+            }
+
+            CognitoService.shared.accessToken = tokens.accessToken
+            CognitoService.shared.idToken = tokens.idToken
+
+            // Decode user info from ID token
+            let userInfo = decodeJWTPayload(tokens.idToken)
+            let userId = userInfo["sub"] as? String ?? UUID().uuidString
+            let email = userInfo["email"] as? String
+            let name = userInfo["name"] as? String
+
+            let profile = UserProfile(
+                id: userId,
+                email: email,
+                displayName: name,
+                provider: AuthProvider.google.rawValue,
+                createdAt: Date()
+            )
+
+            completeSignIn(profile: profile)
+
+            // Sync profile to backend
+            try? await APIService.shared.updateProfile(
+                displayName: name,
+                email: email,
+                provider: AuthProvider.google.rawValue
+            )
+        } catch {
+            errorMessage = "Google sign-in failed: \(error.localizedDescription)"
+            isLoading = false
+        }
+    }
+
+    // MARK: - Token Exchange
+
+    private func exchangeCodeForTokens(code: String) async throws -> CognitoTokenResponse {
+        let url = URL(string: CognitoConfig.tokenEndpoint)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let body = [
+            "grant_type": "authorization_code",
+            "client_id": CognitoConfig.clientId,
+            "code": code,
+            "redirect_uri": CognitoConfig.redirectUri,
+        ]
+
+        request.httpBody = body
+            .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+
+        let (data, httpResponse) = try await URLSession.shared.data(for: request)
+
+        guard let response = httpResponse as? HTTPURLResponse, response.statusCode == 200 else {
+            throw CognitoError.tokenExchangeFailed
+        }
+
+        return try JSONDecoder().decode(CognitoTokenResponse.self, from: data)
+    }
+
+    // MARK: - JWT Decode Helper
+
+    private func decodeJWTPayload(_ jwt: String) -> [String: Any] {
+        let parts = jwt.split(separator: ".")
+        guard parts.count == 3 else { return [:] }
+
+        var base64 = String(parts[1])
+        // Pad base64 string
+        while base64.count % 4 != 0 {
+            base64 += "="
+        }
+
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+
+        return json
+    }
+
     func signOut() {
         currentUser = nil
         isAuthenticated = false

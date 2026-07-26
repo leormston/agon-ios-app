@@ -18,6 +18,23 @@ struct AgonApp: App {
             }
             .animation(.easeInOut, value: authService.isAuthenticated)
             .animation(.easeInOut, value: hasCompletedOnboarding)
+            .onOpenURL { url in
+                handleCallback(url: url)
+            }
+        }
+    }
+
+    private func handleCallback(url: URL) {
+        // Handle agon://callback?code=XXXX from Cognito Hosted UI
+        guard url.scheme == "agon",
+              url.host == "callback",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+            return
+        }
+
+        Task {
+            await authService.handleGoogleCallback(authorizationCode: code)
         }
     }
 }
