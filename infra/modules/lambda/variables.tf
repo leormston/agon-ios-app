@@ -14,6 +14,14 @@ variable "challenges_table_arn" {
   type = string
 }
 
+variable "friendships_table_arn" {
+  type = string
+}
+
+variable "activity_table_arn" {
+  type = string
+}
+
 variable "lambda_zip_path" {
   description = "Path to the Lambda deployment zip"
   type        = string

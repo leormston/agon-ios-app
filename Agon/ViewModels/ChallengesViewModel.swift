@@ -130,15 +130,13 @@ final class ChallengesViewModel: ObservableObject {
 
     private func loadFriends() async {
         do {
-            let users = try await apiService.getAllUsers()
-            let currentId = getCurrentUserId()
-            friends = users
-                .filter { $0["userId"] as? String != currentId }
-                .compactMap { dict in
-                    guard let id = dict["userId"] as? String else { return nil }
-                    let name = dict["displayName"] as? String ?? dict["email"] as? String ?? "User"
-                    return FriendEntry(id: id, name: name)
-                }
+            let data = try await apiService.getFriends()
+            let accepted = data["accepted"] as? [[String: Any]] ?? []
+            friends = accepted.compactMap { dict in
+                guard let id = dict["friendId"] as? String else { return nil }
+                let name = dict["displayName"] as? String ?? "User"
+                return FriendEntry(id: id, name: name)
+            }
         } catch {
             print("Failed to load friends: \(error)")
             friends = []

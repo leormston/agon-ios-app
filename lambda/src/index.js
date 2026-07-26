@@ -6,6 +6,7 @@ const {
   QueryCommand,
   ScanCommand,
   UpdateCommand,
+  DeleteCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const { randomUUID } = require("crypto");
 
@@ -15,6 +16,8 @@ const dynamo = DynamoDBDocumentClient.from(client);
 const USERS_TABLE = process.env.USERS_TABLE;
 const HEALTH_SNAPSHOTS_TABLE = process.env.HEALTH_SNAPSHOTS_TABLE;
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE;
+const FRIENDSHIPS_TABLE = process.env.FRIENDSHIPS_TABLE;
+const ACTIVITY_TABLE = process.env.ACTIVITY_TABLE;
 
 exports.handler = async (event) => {
   const { routeKey, body, requestContext, pathParameters, headers } = event;
@@ -68,6 +71,32 @@ exports.handler = async (event) => {
       case "GET /challenges/{challengeId}":
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getChallengeDetails(userId, pathParameters?.challengeId);
+
+      // Friends
+      case "POST /friends/request":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await sendFriendRequest(userId, JSON.parse(body));
+
+      case "GET /friends":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getFriends(userId);
+
+      case "POST /friends/{friendId}/accept":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await acceptFriendRequest(userId, pathParameters?.friendId);
+
+      case "POST /friends/{friendId}/reject":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await rejectFriendRequest(userId, pathParameters?.friendId);
+
+      case "DELETE /friends/{friendId}":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await removeFriend(userId, pathParameters?.friendId);
+
+      // Activity
+      case "GET /activity":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getActivityFeed(userId);
 
       default:
         return response(404, { error: "Route not found" });
@@ -407,6 +436,196 @@ async function getChallengeDetails(userId, challengeId) {
     ...challenge,
     scores,
   });
+}
+
+// MARK: - Friends
+
+async function sendFriendRequest(userId, data) {
+  const { friendId } = data;
+  if (!friendId) return response(400, { error: "friendId is required" });
+  if (friendId === userId) return response(400, { error: "Cannot friend yourself" });
+
+  // Check if already friends or pending
+  const existing = await dynamo.send(
+    new GetCommand({ TableName: FRIENDSHIPS_TABLE, Key: { userId, friendId } })
+  );
+  if (existing.Item) {
+    return response(400, { error: "Friend request already exists" });
+  }
+
+  // Create pending friendship (from sender's perspective)
+  await dynamo.send(
+    new PutCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      Item: { userId, friendId, status: "pending_sent", createdAt: new Date().toISOString() },
+    })
+  );
+
+  // Create pending friendship (from receiver's perspective)
+  await dynamo.send(
+    new PutCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      Item: { userId: friendId, friendId: userId, status: "pending_received", createdAt: new Date().toISOString() },
+    })
+  );
+
+  // Add to activity feed
+  await addActivity(friendId, "friend_request", `You have a new friend request`, userId);
+
+  return response(200, { message: "Friend request sent" });
+}
+
+async function getFriends(userId) {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      KeyConditionExpression: "userId = :uid",
+      ExpressionAttributeValues: { ":uid": userId },
+    })
+  );
+
+  const friendships = result.Items || [];
+
+  // Get user profiles for each friend
+  const enriched = [];
+  for (const f of friendships) {
+    const userResult = await dynamo.send(
+      new GetCommand({ TableName: USERS_TABLE, Key: { userId: f.friendId } })
+    );
+    const profile = userResult.Item || {};
+    enriched.push({
+      friendId: f.friendId,
+      displayName: profile.displayName || profile.email || "User",
+      status: f.status,
+      createdAt: f.createdAt,
+    });
+  }
+
+  const accepted = enriched.filter(f => f.status === "accepted");
+  const pendingReceived = enriched.filter(f => f.status === "pending_received");
+  const pendingSent = enriched.filter(f => f.status === "pending_sent");
+
+  return response(200, { accepted, pendingReceived, pendingSent });
+}
+
+async function acceptFriendRequest(userId, friendId) {
+  // Update both sides to accepted
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      Key: { userId, friendId },
+      UpdateExpression: "SET #s = :status",
+      ExpressionAttributeNames: { "#s": "status" },
+      ExpressionAttributeValues: { ":status": "accepted" },
+    })
+  );
+
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      Key: { userId: friendId, friendId: userId },
+      UpdateExpression: "SET #s = :status",
+      ExpressionAttributeNames: { "#s": "status" },
+      ExpressionAttributeValues: { ":status": "accepted" },
+    })
+  );
+
+  // Add to activity feed
+  await addActivity(friendId, "friend_accepted", `Your friend request was accepted`, userId);
+
+  return response(200, { message: "Friend request accepted" });
+}
+
+async function rejectFriendRequest(userId, friendId) {
+  // Delete both sides
+  await dynamo.send(
+    new DeleteCommand({ TableName: FRIENDSHIPS_TABLE, Key: { userId, friendId } })
+  );
+  await dynamo.send(
+    new DeleteCommand({ TableName: FRIENDSHIPS_TABLE, Key: { userId: friendId, friendId: userId } })
+  );
+
+  return response(200, { message: "Friend request rejected" });
+}
+
+async function removeFriend(userId, friendId) {
+  await dynamo.send(
+    new DeleteCommand({ TableName: FRIENDSHIPS_TABLE, Key: { userId, friendId } })
+  );
+  await dynamo.send(
+    new DeleteCommand({ TableName: FRIENDSHIPS_TABLE, Key: { userId: friendId, friendId: userId } })
+  );
+
+  return response(200, { message: "Friend removed" });
+}
+
+// MARK: - Activity Feed
+
+async function addActivity(userId, type, message, relatedUserId) {
+  await dynamo.send(
+    new PutCommand({
+      TableName: ACTIVITY_TABLE,
+      Item: {
+        userId,
+        timestamp: new Date().toISOString(),
+        type,
+        message,
+        relatedUserId: relatedUserId || null,
+      },
+    })
+  );
+}
+
+async function getActivityFeed(userId) {
+  // Get user's own activity
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: ACTIVITY_TABLE,
+      KeyConditionExpression: "userId = :uid",
+      ExpressionAttributeValues: { ":uid": userId },
+      ScanIndexForward: false,
+      Limit: 20,
+    })
+  );
+
+  // Also get activity of accepted friends
+  const friendsResult = await dynamo.send(
+    new QueryCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      KeyConditionExpression: "userId = :uid",
+      ExpressionAttributeValues: { ":uid": userId },
+    })
+  );
+
+  const acceptedFriends = (friendsResult.Items || [])
+    .filter(f => f.status === "accepted")
+    .map(f => f.friendId);
+
+  let friendActivity = [];
+  for (const fId of acceptedFriends.slice(0, 10)) {
+    const fResult = await dynamo.send(
+      new QueryCommand({
+        TableName: ACTIVITY_TABLE,
+        KeyConditionExpression: "userId = :uid",
+        ExpressionAttributeValues: { ":uid": fId },
+        ScanIndexForward: false,
+        Limit: 5,
+      })
+    );
+    // Get friend's display name
+    const userResult = await dynamo.send(
+      new GetCommand({ TableName: USERS_TABLE, Key: { userId: fId } })
+    );
+    const name = userResult.Item?.displayName || "Friend";
+    friendActivity.push(...(fResult.Items || []).map(a => ({ ...a, displayName: name })));
+  }
+
+  // Combine and sort by timestamp
+  const allActivity = [...(result.Items || []), ...friendActivity]
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .slice(0, 30);
+
+  return response(200, { activity: allActivity });
 }
 
 // MARK: - Helpers

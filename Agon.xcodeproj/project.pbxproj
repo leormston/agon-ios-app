@@ -30,6 +30,8 @@
 		E51000021 /* Challenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000023 /* Challenge.swift */; };
 		E51000022 /* ChallengesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000024 /* ChallengesViewModel.swift */; };
 		E51000023 /* CreateChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000025 /* CreateChallengeView.swift */; };
+		E51000024 /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000026 /* FriendsViewModel.swift */; };
+		E51000025 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000027 /* AddFriendView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +60,8 @@
 		E52000023 /* Challenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Challenge.swift; sourceTree = "<group>"; };
 		E52000024 /* ChallengesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesViewModel.swift; sourceTree = "<group>"; };
 		E52000025 /* CreateChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateChallengeView.swift; sourceTree = "<group>"; };
+		E52000026 /* FriendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
+		E52000027 /* AddFriendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriendView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +108,7 @@
 				E52000003 /* DashboardView.swift */,
 				E52000004 /* ChallengesView.swift */,
 				E52000025 /* CreateChallengeView.swift */,
+				E52000027 /* AddFriendView.swift */,
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
@@ -164,6 +169,7 @@
 				E52000013 /* DashboardViewModel.swift */,
 				E52000022 /* LeaderboardViewModel.swift */,
 				E52000024 /* ChallengesViewModel.swift */,
+				E52000026 /* FriendsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -262,6 +268,8 @@
 				E51000021 /* Challenge.swift in Sources */,
 				E51000022 /* ChallengesViewModel.swift in Sources */,
 				E51000023 /* CreateChallengeView.swift in Sources */,
+				E51000024 /* FriendsViewModel.swift in Sources */,
+				E51000025 /* AddFriendView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

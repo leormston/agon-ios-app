@@ -69,6 +69,52 @@ final class APIService: ObservableObject {
         return (json as? [[String: Any]]) ?? ((json as? [String: Any])?["users"] as? [[String: Any]] ?? [])
     }
 
+    // MARK: - Friends
+
+    func sendFriendRequest(friendId: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["friendId": friendId])
+        let (_, response) = try await request(method: "POST", path: "/friends/request", body: body)
+        guard response.statusCode == 200 else {
+            throw APIError.friendRequestFailed
+        }
+    }
+
+    func getFriends() async throws -> [String: Any] {
+        let (data, response) = try await request(method: "GET", path: "/friends")
+        guard response.statusCode == 200 else { return [:] }
+        return (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+    }
+
+    func acceptFriendRequest(friendId: String) async throws {
+        let (_, response) = try await request(method: "POST", path: "/friends/\(friendId)/accept")
+        guard response.statusCode == 200 else {
+            throw APIError.friendRequestFailed
+        }
+    }
+
+    func rejectFriendRequest(friendId: String) async throws {
+        let (_, response) = try await request(method: "POST", path: "/friends/\(friendId)/reject")
+        guard response.statusCode == 200 else {
+            throw APIError.friendRequestFailed
+        }
+    }
+
+    func removeFriend(friendId: String) async throws {
+        let (_, response) = try await request(method: "DELETE", path: "/friends/\(friendId)")
+        guard response.statusCode == 200 else {
+            throw APIError.friendRequestFailed
+        }
+    }
+
+    // MARK: - Activity Feed
+
+    func getActivityFeed() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/activity")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return json?["activity"] as? [[String: Any]] ?? []
+    }
+
     // MARK: - Leaderboard
 
     func getLeaderboard(challengeId: String) async throws -> [String: Any]? {
@@ -176,6 +222,7 @@ enum APIError: LocalizedError {
     case syncFailed
     case challengeCreationFailed
     case challengeJoinFailed
+    case friendRequestFailed
 
     var errorDescription: String? {
         switch self {
@@ -186,6 +233,7 @@ enum APIError: LocalizedError {
         case .syncFailed: return "Failed to sync health data"
         case .challengeCreationFailed: return "Failed to create challenge"
         case .challengeJoinFailed: return "Failed to join challenge"
+        case .friendRequestFailed: return "Friend request failed"
         }
     }
 }

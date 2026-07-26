@@ -32,5 +32,7 @@ module "lambda" {
   dynamodb_table_arn         = module.dynamodb.users_table_arn
   health_snapshots_table_arn = module.dynamodb.health_snapshots_table_arn
   challenges_table_arn       = module.dynamodb.challenges_table_arn
+  friendships_table_arn      = module.dynamodb.friendships_table_arn
+  activity_table_arn         = module.dynamodb.activity_table_arn
   lambda_zip_path            = var.lambda_zip_path
 }
