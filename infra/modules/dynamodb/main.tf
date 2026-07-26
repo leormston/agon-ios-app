@@ -124,3 +124,40 @@ resource "aws_dynamodb_table" "activity" {
     Name = "agon-${var.environment}-activity"
   }
 }
+
+# Profile images bucket
+resource "aws_s3_bucket" "profile_images" {
+  bucket = "agon-${var.environment}-profile-images"
+
+  tags = {
+    Name = "agon-${var.environment}-profile-images"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "profile_images" {
+  bucket = aws_s3_bucket.profile_images.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "profile_images_public_read" {
+  bucket = aws_s3_bucket.profile_images.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.profile_images.arn}/*"
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.profile_images]
+}

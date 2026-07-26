@@ -8,16 +8,22 @@ const {
   UpdateCommand,
   DeleteCommand,
 } = require("@aws-sdk/lib-dynamodb");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
 const { randomUUID } = require("crypto");
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
+const s3 = new S3Client({});
+const ses = new SESClient({});
 
 const USERS_TABLE = process.env.USERS_TABLE;
 const HEALTH_SNAPSHOTS_TABLE = process.env.HEALTH_SNAPSHOTS_TABLE;
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE;
 const FRIENDSHIPS_TABLE = process.env.FRIENDSHIPS_TABLE;
 const ACTIVITY_TABLE = process.env.ACTIVITY_TABLE;
+const PROFILE_IMAGES_BUCKET = process.env.PROFILE_IMAGES_BUCKET;
 
 exports.handler = async (event) => {
   const { routeKey, body, requestContext, pathParameters, headers } = event;
@@ -77,6 +83,10 @@ exports.handler = async (event) => {
         if (!userId) return response(401, { error: "Unauthorized" });
         return await sendFriendRequest(userId, JSON.parse(body));
 
+      case "POST /profile/avatar":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await uploadAvatar(userId, body);
+
       case "GET /friends":
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getFriends(userId);
@@ -97,6 +107,11 @@ exports.handler = async (event) => {
       case "GET /activity":
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getActivityFeed(userId);
+
+      // Feedback
+      case "POST /feedback":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await submitFeedback(userId, JSON.parse(body));
 
       default:
         return response(404, { error: "Route not found" });
@@ -448,6 +463,37 @@ async function getChallengeDetails(userId, challengeId) {
   });
 }
 
+// MARK: - Avatar Upload
+
+async function uploadAvatar(userId, body) {
+  const key = `avatars/${userId}.jpg`;
+
+  // Generate presigned URL for direct upload from iOS
+  const command = new PutObjectCommand({
+    Bucket: PROFILE_IMAGES_BUCKET,
+    Key: key,
+    ContentType: "image/jpeg",
+  });
+
+  const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+  const publicUrl = `https://${PROFILE_IMAGES_BUCKET}.s3.eu-west-2.amazonaws.com/${key}`;
+
+  // Update user profile with avatar URL
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { userId },
+      UpdateExpression: "SET avatarUrl = :url, updatedAt = :now",
+      ExpressionAttributeValues: {
+        ":url": publicUrl,
+        ":now": new Date().toISOString(),
+      },
+    })
+  );
+
+  return response(200, { uploadUrl: presignedUrl, avatarUrl: publicUrl });
+}
+
 // MARK: - Friends
 
 async function sendFriendRequest(userId, data) {
@@ -636,6 +682,50 @@ async function getActivityFeed(userId) {
     .slice(0, 30);
 
   return response(200, { activity: allActivity });
+}
+
+// MARK: - Feedback
+
+async function submitFeedback(userId, data) {
+  const { type, title, description } = data;
+
+  if (!title || !description) {
+    return response(400, { error: "title and description are required" });
+  }
+
+  // Get user info for the email
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const userName = userResult.Item?.displayName || userResult.Item?.email || userId;
+
+  // Send email
+  try {
+    await ses.send(new SendEmailCommand({
+      Source: "noreply@agonhealth.app",
+      Destination: {
+        ToAddresses: ["louie@louie.cloud"],
+      },
+      Message: {
+        Subject: {
+          Data: `[Agon ${type}] ${title}`,
+        },
+        Body: {
+          Text: {
+            Data: `Type: ${type}\nFrom: ${userName} (${userId})\n\nTitle: ${title}\n\nDescription:\n${description}\n\nTimestamp: ${new Date().toISOString()}`,
+          },
+        },
+      },
+    }));
+  } catch (emailError) {
+    console.log("SES email failed (may not be configured):", emailError.message);
+    // Still save feedback even if email fails
+  }
+
+  // Also store in activity for record
+  await addActivity(userId, "feedback", `Submitted ${type}: ${title}`, null);
+
+  return response(200, { message: "Feedback submitted successfully" });
 }
 
 // MARK: - Helpers

@@ -45,6 +45,40 @@ resource "aws_iam_role_policy" "dynamodb_access" {
   policy = data.aws_iam_policy_document.dynamodb_access.json
 }
 
+# S3 access for profile images
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      "${var.profile_images_bucket_arn}/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "s3_access" {
+  name   = "s3-access"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.s3_access.json
+}
+
+# SES send email
+data "aws_iam_policy_document" "ses_access" {
+  statement {
+    actions   = ["ses:SendEmail", "ses:SendRawEmail"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "ses_access" {
+  name   = "ses-access"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.ses_access.json
+}
+
 # CloudWatch Logs policy
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda.name
@@ -72,6 +106,7 @@ resource "aws_lambda_function" "api" {
       CHALLENGES_TABLE       = "agon-${var.environment}-challenges"
       FRIENDSHIPS_TABLE      = "agon-${var.environment}-friendships"
       ACTIVITY_TABLE         = "agon-${var.environment}-activity"
+      PROFILE_IMAGES_BUCKET  = "agon-${var.environment}-profile-images"
     }
   }
 

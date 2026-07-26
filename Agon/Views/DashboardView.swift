@@ -37,7 +37,7 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
                     .padding(.horizontal)
                 } else {
-                    // Metric Cards — 2 columns, 3 rows for 6 metrics
+                    // Metric Cards - 2 columns, 3 rows for 6 metrics
                     LazyVGrid(columns: [
                         GridItem(.flexible()),
                         GridItem(.flexible())
@@ -92,18 +92,18 @@ struct DashboardView: View {
                         .font(.headline)
                         .foregroundStyle(Color.agonTextPrimary)
 
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("10K Steps Daily")
-                                .font(.subheadline.bold())
-                                .foregroundStyle(Color.agonTextPrimary)
-                            Text("3 days remaining")
-                                .font(.caption)
-                                .foregroundStyle(Color.agonTextSecondary)
-                        }
-                        Spacer()
-                        CircularProgressView(progress: stepsProgress)
+                    VStack(spacing: 8) {
+                        Image(systemName: "trophy")
+                            .font(.title2)
+                            .foregroundStyle(Color.agonTextSecondary)
+                        Text("No active challenges")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.agonTextSecondary)
+                        Text("Go to Challenges tab to create one")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.agonSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -133,10 +133,6 @@ struct DashboardView: View {
 
     // MARK: - Helpers
 
-    private var stepsProgress: Double {
-        guard let steps = viewModel.snapshot?.steps else { return 0 }
-        return min(steps / 10_000, 1.0)
-    }
 }
 
 // MARK: - Metric Card

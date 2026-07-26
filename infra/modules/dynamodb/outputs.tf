@@ -37,3 +37,11 @@ output "activity_table_name" {
 output "activity_table_arn" {
   value = aws_dynamodb_table.activity.arn
 }
+
+output "profile_images_bucket" {
+  value = aws_s3_bucket.profile_images.bucket
+}
+
+output "profile_images_bucket_arn" {
+  value = aws_s3_bucket.profile_images.arn
+}

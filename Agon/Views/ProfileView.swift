@@ -1,8 +1,14 @@
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var authService = AuthService.shared
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var avatarImage: Image?
+    @State private var isUploadingAvatar = false
+    @State private var showFeedback = false
+    @AppStorage("avatarUrl") private var avatarUrl = ""
 
     var body: some View {
         NavigationStack {
@@ -10,14 +16,58 @@ struct ProfileView: View {
                 VStack(spacing: 24) {
                     // Avatar and Name
                     VStack(spacing: 12) {
-                        Circle()
-                            .fill(Color.agonAccent.gradient)
-                            .frame(width: 80, height: 80)
-                            .overlay {
-                                Text(userInitial)
-                                    .font(.largeTitle.bold())
-                                    .foregroundStyle(.white)
+                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                            ZStack(alignment: .bottomTrailing) {
+                                if let avatarImage {
+                                    avatarImage
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 80, height: 80)
+                                        .clipShape(Circle())
+                                } else if !avatarUrl.isEmpty, let url = URL(string: avatarUrl) {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                    } placeholder: {
+                                        Circle()
+                                            .fill(Color.agonAccent.gradient)
+                                            .overlay {
+                                                Text(userInitial)
+                                                    .font(.largeTitle.bold())
+                                                    .foregroundStyle(.white)
+                                            }
+                                    }
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(Color.agonAccent.gradient)
+                                        .frame(width: 80, height: 80)
+                                        .overlay {
+                                            Text(userInitial)
+                                                .font(.largeTitle.bold())
+                                                .foregroundStyle(.white)
+                                        }
+                                }
+
+                                // Camera badge
+                                Circle()
+                                    .fill(Color.agonSurface)
+                                    .frame(width: 26, height: 26)
+                                    .overlay {
+                                        Image(systemName: "camera.fill")
+                                            .font(.caption2)
+                                            .foregroundStyle(Color.agonTextPrimary)
+                                    }
+                                    .shadow(radius: 2)
                             }
+                        }
+
+                        if isUploadingAvatar {
+                            ProgressView("Uploading...")
+                                .font(.caption)
+                        }
 
                         Text(displayName)
                             .font(.title2.bold())
@@ -33,9 +83,9 @@ struct ProfileView: View {
 
                     // Stats
                     HStack(spacing: 0) {
-                        StatItem(value: "42", label: "Day Streak")
-                        StatItem(value: "12", label: "Challenges")
-                        StatItem(value: "3", label: "Wins")
+                        StatItem(value: "-", label: "Day Streak")
+                        StatItem(value: "-", label: "Challenges")
+                        StatItem(value: "-", label: "Wins")
                     }
                     .padding()
                     .background(Color.agonSurface)
@@ -57,44 +107,22 @@ struct ProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     // Feedback
-                    VStack(spacing: 0) {
-                        Button {
-                            openFeedback(type: "bug")
-                        } label: {
-                            HStack {
-                                Image(systemName: "ladybug.fill")
-                                    .foregroundStyle(.red)
-                                    .frame(width: 28)
-                                Text("Report a Bug")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.agonTextPrimary)
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.agonTextSecondary)
-                            }
-                            .padding()
+                    Button {
+                        showFeedback = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                                .foregroundStyle(Color.agonAccent)
+                                .frame(width: 28)
+                            Text("Report Bug / Request Feature")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.agonTextPrimary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(Color.agonTextSecondary)
                         }
-
-                        Divider().foregroundStyle(Color.agonBorder)
-
-                        Button {
-                            openFeedback(type: "feature")
-                        } label: {
-                            HStack {
-                                Image(systemName: "lightbulb.fill")
-                                    .foregroundStyle(.yellow)
-                                    .frame(width: 28)
-                                Text("Feature Request")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.agonTextPrimary)
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.agonTextSecondary)
-                            }
-                            .padding()
-                        }
+                        .padding()
                     }
                     .background(Color.agonSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -129,7 +157,53 @@ struct ProfileView: View {
                     .foregroundStyle(Color.agonAccent)
                 }
             }
+            .onChange(of: selectedPhoto) {
+                Task {
+                    await handlePhotoSelection()
+                }
+            }
+            .sheet(isPresented: $showFeedback) {
+                FeedbackView()
+            }
         }
+    }
+
+    private func handlePhotoSelection() async {
+        guard let selectedPhoto else { return }
+
+        isUploadingAvatar = true
+
+        do {
+            // Load the image data
+            guard let data = try await selectedPhoto.loadTransferable(type: Data.self) else {
+                isUploadingAvatar = false
+                return
+            }
+
+            // Compress to JPEG
+            guard let uiImage = UIImage(data: data),
+                  let jpegData = uiImage.jpegData(compressionQuality: 0.7) else {
+                isUploadingAvatar = false
+                return
+            }
+
+            // Show preview immediately
+            avatarImage = Image(uiImage: uiImage)
+
+            // Get presigned URL from backend
+            let urls = try await APIService.shared.getAvatarUploadUrl()
+
+            // Upload to S3
+            try await APIService.shared.uploadImageToS3(presignedUrl: urls.uploadUrl, imageData: jpegData)
+
+            // Save URL locally
+            avatarUrl = urls.avatarUrl
+
+        } catch {
+            print("Avatar upload failed: \(error)")
+        }
+
+        isUploadingAvatar = false
     }
 
     private var userInitial: String {
@@ -141,20 +215,6 @@ struct ProfileView: View {
         authService.currentUser?.displayName ?? "User"
     }
 
-    private func openFeedback(type: String) {
-        let subject = type == "bug" ? "Bug Report — Agon Health" : "Feature Request — Agon Health"
-        let body = type == "bug"
-            ? "Please describe the bug:\n\n\nSteps to reproduce:\n1.\n2.\n3.\n\nExpected behaviour:\n\nActual behaviour:\n"
-            : "Please describe the feature you'd like:\n\n\nWhy would this be useful?\n\n"
-
-        let email = "louie@louie.cloud"
-        let urlString = "mailto:\(email)?subject=\(subject)&body=\(body)"
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url)
-        }
-    }
 }
 
 struct StatItem: View {
@@ -198,4 +258,4 @@ struct ProfileRow: View {
 
 #Preview {
     ProfileView()
-}
+

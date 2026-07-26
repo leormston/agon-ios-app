@@ -22,6 +22,10 @@ variable "activity_table_arn" {
   type = string
 }
 
+variable "profile_images_bucket_arn" {
+  type = string
+}
+
 variable "lambda_zip_path" {
   description = "Path to the Lambda deployment zip"
   type        = string

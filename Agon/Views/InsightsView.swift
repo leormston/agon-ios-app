@@ -31,7 +31,7 @@ struct InsightsView: View {
                             .foregroundStyle(Color.agonTextPrimary)
 
                         InsightRow(icon: "figure.walk", title: "Activity", detail: "12% more active than last week", trend: .up)
-                        InsightRow(icon: "moon.fill", title: "Sleep", detail: "Avg 7.2 hours — on target", trend: .stable)
+                        InsightRow(icon: "moon.fill", title: "Sleep", detail: "Avg 7.2 hours - on target", trend: .stable)
                         InsightRow(icon: "heart.fill", title: "Heart Health", detail: "Resting HR down 3 bpm", trend: .up)
                         InsightRow(icon: "fork.knife", title: "Nutrition", detail: "Calorie goal missed 2 days", trend: .down)
                     }

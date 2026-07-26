@@ -35,7 +35,8 @@ struct ContentView: View {
                     Image("AgonLogo")
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 28)
+                        .frame(width: 28, height: 28)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
