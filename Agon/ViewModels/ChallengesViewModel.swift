@@ -41,6 +41,7 @@ final class ChallengesViewModel: ObservableObject {
 
             activeChallenges = active
             invitedChallenges = invited
+            errorMessage = nil
         } catch {
             errorMessage = "Failed to load challenges"
             print("Challenges error: \(error)")
