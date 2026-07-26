@@ -107,14 +107,14 @@ A working app where users can connect HealthKit, see real health data on their d
   - AC3: Tapping notification navigates to relevant screen (future - needs APNs setup)
 
 ## Phase 6: Polish & Launch
-- [ ] 29. Onboarding flow (welcome screens, permissions, goal setting)
-  - AC1: 2-3 welcome screens explaining the app
-  - AC2: Smooth transitions between steps
-  - AC3: Only shown on first launch
-- [ ] 30. Loading states & error handling
-  - AC1: All network calls show loading indicators
-  - AC2: Errors show user-friendly messages with retry option
-  - AC3: Offline state handled gracefully
+- [x] 29. Onboarding flow (welcome screens, permissions, goal setting)
+  - AC1: 2-3 welcome screens explaining the app ✅
+  - AC2: Smooth transitions between steps ✅
+  - AC3: Only shown on first launch ✅
+- [x] 30. Loading states & error handling
+  - AC1: All network calls show loading indicators ✅
+  - AC2: Errors show user-friendly messages with retry option ✅
+  - AC3: Offline state handled gracefully ✅
 - [ ] 31. App Store listing (screenshots, description, privacy policy)
   - AC1: 5 screenshots covering main features
   - AC2: Privacy policy URL live and linked
