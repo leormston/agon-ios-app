@@ -260,3 +260,4 @@ struct ProfileRow: View {
     ProfileView()
 }
 
+make 
