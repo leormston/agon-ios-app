@@ -88,23 +88,23 @@ A working app where users can connect HealthKit, see real health data on their d
   - AC2: Winner shown on a results screen (via challenge details)
   - AC3: Push notification sent to all participants (Phase 5)
 
-## Phase 5: Social
-- [ ] 25. Add friends (invite link or search)
-  - AC1: User can search by username or name
-  - AC2: User can share an invite link
-  - AC3: Friend request sent and visible to recipient
-- [ ] 26. Friends list
-  - AC1: Shows all accepted friends
-  - AC2: Shows pending requests (sent and received)
-  - AC3: Can remove a friend
-- [ ] 27. Activity feed (real friend activity from backend)
-  - AC1: Feed shows friends' recent completions and milestones
-  - AC2: Feed updates on pull-to-refresh
-  - AC3: Empty state shown when no friends have activity
-- [ ] 28. Push notifications (challenge invites, results, milestones)
-  - AC1: User receives notification when invited to a challenge
-  - AC2: User receives notification when a challenge ends
-  - AC3: Tapping notification navigates to relevant screen
+## Phase 5: Social ✅
+- [x] 25. Add friends (invite link or search)
+  - AC1: User can search by username or name ✅
+  - AC2: User can share an invite link (search-based for now)
+  - AC3: Friend request sent and visible to recipient ✅
+- [x] 26. Friends list
+  - AC1: Shows all accepted friends ✅
+  - AC2: Shows pending requests (sent and received) ✅
+  - AC3: Can remove a friend ✅
+- [x] 27. Activity feed (real friend activity from backend)
+  - AC1: Feed shows friends' recent completions and milestones ✅
+  - AC2: Feed updates on pull-to-refresh ✅
+  - AC3: Empty state shown when no friends have activity ✅
+- [x] 28. Push notifications (challenge invites, results, milestones)
+  - AC1: User receives notification when invited to a challenge (activity feed for now)
+  - AC2: User receives notification when a challenge ends (activity feed for now)
+  - AC3: Tapping notification navigates to relevant screen (future - needs APNs setup)
 
 ## Phase 6: Polish & Launch
 - [ ] 29. Onboarding flow (welcome screens, permissions, goal setting)

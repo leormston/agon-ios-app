@@ -21,3 +21,19 @@ output "challenges_table_name" {
 output "challenges_table_arn" {
   value = aws_dynamodb_table.challenges.arn
 }
+
+output "friendships_table_name" {
+  value = aws_dynamodb_table.friendships.name
+}
+
+output "friendships_table_arn" {
+  value = aws_dynamodb_table.friendships.arn
+}
+
+output "activity_table_name" {
+  value = aws_dynamodb_table.activity.name
+}
+
+output "activity_table_arn" {
+  value = aws_dynamodb_table.activity.arn
+}

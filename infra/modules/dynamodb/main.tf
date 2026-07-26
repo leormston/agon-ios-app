@@ -73,3 +73,54 @@ resource "aws_dynamodb_table" "challenges" {
     Name = "agon-${var.environment}-challenges"
   }
 }
+
+# Friendships table
+resource "aws_dynamodb_table" "friendships" {
+  name         = "agon-${var.environment}-friendships"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userId"
+  range_key    = "friendId"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "friendId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "friendId-index"
+    hash_key        = "friendId"
+    range_key       = "userId"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Name = "agon-${var.environment}-friendships"
+  }
+}
+
+# Activity feed table
+resource "aws_dynamodb_table" "activity" {
+  name         = "agon-${var.environment}-activity"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userId"
+  range_key    = "timestamp"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "S"
+  }
+
+  tags = {
+    Name = "agon-${var.environment}-activity"
+  }
+}

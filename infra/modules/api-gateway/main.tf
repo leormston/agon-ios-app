@@ -97,6 +97,43 @@ resource "aws_apigatewayv2_route" "get_challenge" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# Friends routes
+resource "aws_apigatewayv2_route" "send_friend_request" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /friends/request"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_friends" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /friends"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "accept_friend" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /friends/{friendId}/accept"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reject_friend" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /friends/{friendId}/reject"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "remove_friend" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /friends/{friendId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_activity" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /activity"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Stage
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id

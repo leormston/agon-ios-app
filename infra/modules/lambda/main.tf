@@ -31,6 +31,10 @@ data "aws_iam_policy_document" "dynamodb_access" {
       "${var.health_snapshots_table_arn}/index/*",
       var.challenges_table_arn,
       "${var.challenges_table_arn}/index/*",
+      var.friendships_table_arn,
+      "${var.friendships_table_arn}/index/*",
+      var.activity_table_arn,
+      "${var.activity_table_arn}/index/*",
     ]
   }
 }
@@ -66,6 +70,8 @@ resource "aws_lambda_function" "api" {
       USERS_TABLE            = "agon-${var.environment}-users"
       HEALTH_SNAPSHOTS_TABLE = "agon-${var.environment}-health-snapshots"
       CHALLENGES_TABLE       = "agon-${var.environment}-challenges"
+      FRIENDSHIPS_TABLE      = "agon-${var.environment}-friendships"
+      ACTIVITY_TABLE         = "agon-${var.environment}-activity"
     }
   }
 
