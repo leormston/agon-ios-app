@@ -20,9 +20,6 @@ final class ChallengesViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        // Load friends list in parallel
-        await loadFriends()
-
         do {
             let rawChallenges = try await apiService.getChallenges()
             let currentUserId = getCurrentUserId()
@@ -44,10 +41,20 @@ final class ChallengesViewModel: ObservableObject {
 
             activeChallenges = active
             invitedChallenges = invited
+            errorMessage = nil
+        } catch is CancellationError {
+            // Ignore — task was cancelled by SwiftUI (e.g. view disappeared)
+        } catch let error as NSError where error.code == -999 {
+            // Ignore — URLSession request cancelled
         } catch {
-            errorMessage = "Failed to load challenges"
+            if activeChallenges.isEmpty && invitedChallenges.isEmpty {
+                errorMessage = "Failed to load challenges"
+            }
             print("Challenges error: \(error)")
         }
+
+        // Load friends separately (non-blocking)
+        await loadFriends()
 
         isLoading = false
     }
