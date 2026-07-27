@@ -149,6 +149,9 @@ struct FriendProfileView: View {
         .background(Color.agonBackground)
         .navigationTitle(displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .refreshable {
+            await loadProfile()
+        }
         .task {
             await loadProfile()
         }
