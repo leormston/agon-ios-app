@@ -1,6 +1,14 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Dashboard Period
+
+enum DashboardPeriod {
+    case today
+    case last7Days
+    case thisWeek
+}
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
 
@@ -14,6 +22,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var syncsRemaining: Int = 10
     @Published var selectedDate: Date = .now
     @Published var showWeekSummary = false
+    @Published var selectedPeriod: DashboardPeriod = .today
 
     private let healthService = HealthKitService.shared
     private let apiService = APIService.shared
@@ -24,7 +33,7 @@ final class DashboardViewModel: ObservableObject {
     private let past7DaysSyncKey = "agon_past7_sync_date"
 
     var metrics: [HealthMetric] {
-        if showWeekSummary {
+        if selectedPeriod == .thisWeek {
             return weekSummaryMetrics
         }
         return snapshot?.metrics ?? []
@@ -85,6 +94,43 @@ final class DashboardViewModel: ObservableObject {
             formatter.dateFormat = "EEE, MMM d"
             return formatter.string(from: selectedDate)
         }
+    }
+
+    var periodTitle: String {
+        switch selectedPeriod {
+        case .today: return "Your Health Today"
+        case .last7Days: return "Last 7 Days"
+        case .thisWeek: return "This Week"
+        }
+    }
+
+    func selectPeriod(_ period: DashboardPeriod) async {
+        selectedPeriod = period
+        switch period {
+        case .today:
+            showWeekSummary = false
+            selectedDate = .now
+            await loadData()
+        case .last7Days:
+            showWeekSummary = false
+            selectedDate = .now
+            await loadData()
+        case .thisWeek:
+            showWeekSummary = true
+            await loadWeekData()
+        }
+    }
+
+    private func loadWeekData() async {
+        isLoading = true
+        var snapshots: [DailySnapshot] = []
+        for dayOffset in 0..<7 {
+            let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
+            let snap = await healthService.fetchSnapshot(for: date)
+            snapshots.append(snap)
+        }
+        weekSnapshots = snapshots
+        isLoading = false
     }
 
     // MARK: - Actions
