@@ -36,35 +36,34 @@ struct DashboardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal)
 
-                // Date Navigation (only shown for Last 7 Days)
-                if viewModel.selectedPeriod == .last7Days {
-                    HStack(spacing: 16) {
+                // Total / Average toggle (shown for Last 7 Days and This Week)
+                if viewModel.selectedPeriod != .today {
+                    HStack(spacing: 0) {
                         Button {
-                            Task { await viewModel.goBack() }
+                            viewModel.aggregationMode = .total
                         } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.headline)
-                                .foregroundStyle(viewModel.canGoBack ? Color.agonAccent : Color.agonBorder)
+                            Text("Total")
+                                .font(.caption.bold())
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(viewModel.aggregationMode == .total ? Color.agonAccent : Color.clear)
+                                .foregroundStyle(viewModel.aggregationMode == .total ? .white : Color.agonTextSecondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        .disabled(!viewModel.canGoBack)
-
-                        Spacer()
-
-                        Text(viewModel.selectedDateLabel)
-                            .font(.subheadline.bold())
-                            .foregroundStyle(Color.agonTextPrimary)
-
-                        Spacer()
-
                         Button {
-                            Task { await viewModel.goForward() }
+                            viewModel.aggregationMode = .average
                         } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.headline)
-                                .foregroundStyle(viewModel.canGoForward ? Color.agonAccent : Color.agonBorder)
+                            Text("Average")
+                                .font(.caption.bold())
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(viewModel.aggregationMode == .average ? Color.agonAccent : Color.clear)
+                                .foregroundStyle(viewModel.aggregationMode == .average ? .white : Color.agonTextSecondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        .disabled(!viewModel.canGoForward)
                     }
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                     .padding(.horizontal)
                 }
 
@@ -85,10 +84,10 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
                     .padding(.horizontal)
                 } else {
-                    // Week summary label
-                    if viewModel.selectedPeriod == .thisWeek {
+                    // Aggregation label
+                    if viewModel.selectedPeriod == .thisWeek || viewModel.selectedPeriod == .last7Days {
                         HStack {
-                            Text("Totals (avg sleep)")
+                            Text(viewModel.aggregationMode == .total ? "Totals" : "Daily Average")
                                 .font(.caption)
                                 .foregroundStyle(Color.agonTextSecondary)
                             Spacer()

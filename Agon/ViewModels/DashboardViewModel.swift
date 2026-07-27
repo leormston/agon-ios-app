@@ -9,6 +9,11 @@ enum DashboardPeriod {
     case thisWeek
 }
 
+enum AggregationMode: String {
+    case total = "Total"
+    case average = "Average"
+}
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
 
@@ -23,6 +28,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var selectedDate: Date = .now
     @Published var showWeekSummary = false
     @Published var selectedPeriod: DashboardPeriod = .today
+    @Published var aggregationMode: AggregationMode = .total
 
     private let healthService = HealthKitService.shared
     private let apiService = APIService.shared
@@ -33,30 +39,33 @@ final class DashboardViewModel: ObservableObject {
     private let past7DaysSyncKey = "agon_past7_sync_date"
 
     var metrics: [HealthMetric] {
-        if selectedPeriod == .thisWeek {
-            return weekSummaryMetrics
+        switch selectedPeriod {
+        case .today:
+            return snapshot?.metrics ?? []
+        case .last7Days, .thisWeek:
+            return aggregatedMetrics
         }
-        return snapshot?.metrics ?? []
     }
 
-    var weekSummaryMetrics: [HealthMetric] {
+    var aggregatedMetrics: [HealthMetric] {
         guard !weekSnapshots.isEmpty else { return [] }
         let count = Double(weekSnapshots.count)
         let totalSteps = weekSnapshots.reduce(0.0) { $0 + $1.steps }
         let totalDistanceWalked = weekSnapshots.reduce(0.0) { $0 + $1.distanceWalked }
         let totalDistanceRan = weekSnapshots.reduce(0.0) { $0 + $1.distanceRan }
-        let avgSleep = weekSnapshots.reduce(0.0) { $0 + $1.totalSleep } / count
+        let totalSleep = weekSnapshots.reduce(0.0) { $0 + $1.totalSleep }
         let totalDaylight = weekSnapshots.reduce(0.0) { $0 + $1.timeInDaylight }
         let totalExercise = weekSnapshots.reduce(0.0) { $0 + $1.exerciseMinutes }
 
+        let divisor = aggregationMode == .average ? count : 1.0
         let today = Date.now
         return [
-            HealthMetric(type: .steps, value: totalSteps, date: today),
-            HealthMetric(type: .distanceWalked, value: totalDistanceWalked, date: today),
-            HealthMetric(type: .distanceRan, value: totalDistanceRan, date: today),
-            HealthMetric(type: .totalSleep, value: avgSleep, date: today),
-            HealthMetric(type: .timeInDaylight, value: totalDaylight, date: today),
-            HealthMetric(type: .exerciseMinutes, value: totalExercise, date: today),
+            HealthMetric(type: .steps, value: totalSteps / divisor, date: today),
+            HealthMetric(type: .distanceWalked, value: totalDistanceWalked / divisor, date: today),
+            HealthMetric(type: .distanceRan, value: totalDistanceRan / divisor, date: today),
+            HealthMetric(type: .totalSleep, value: totalSleep / divisor, date: today),
+            HealthMetric(type: .timeInDaylight, value: totalDaylight / divisor, date: today),
+            HealthMetric(type: .exerciseMinutes, value: totalExercise / divisor, date: today),
         ]
     }
 
@@ -106,26 +115,47 @@ final class DashboardViewModel: ObservableObject {
 
     func selectPeriod(_ period: DashboardPeriod) async {
         selectedPeriod = period
+        aggregationMode = .total
         switch period {
         case .today:
             showWeekSummary = false
             selectedDate = .now
             await loadData()
         case .last7Days:
-            showWeekSummary = false
-            selectedDate = .now
-            await loadData()
+            showWeekSummary = true
+            await loadLast7Days()
         case .thisWeek:
             showWeekSummary = true
-            await loadWeekData()
+            await loadThisWeek()
         }
     }
 
-    private func loadWeekData() async {
+    func toggleAggregation() {
+        aggregationMode = aggregationMode == .total ? .average : .total
+    }
+
+    private func loadLast7Days() async {
         isLoading = true
         var snapshots: [DailySnapshot] = []
         for dayOffset in 0..<7 {
             let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
+            let snap = await healthService.fetchSnapshot(for: date)
+            snapshots.append(snap)
+        }
+        weekSnapshots = snapshots
+        isLoading = false
+    }
+
+    private func loadThisWeek() async {
+        isLoading = true
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        // Monday = 2 in gregorian. Days since Monday:
+        let daysSinceMonday = (weekday + 5) % 7
+        var snapshots: [DailySnapshot] = []
+        for dayOffset in 0...daysSinceMonday {
+            let date = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
             let snap = await healthService.fetchSnapshot(for: date)
             snapshots.append(snap)
         }
