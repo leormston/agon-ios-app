@@ -101,7 +101,14 @@ struct DashboardView: View {
                         GridItem(.flexible())
                     ], spacing: 16) {
                         ForEach(viewModel.metrics) { metric in
-                            MetricCard(metric: metric)
+                            NavigationLink(destination: MetricDetailView(
+                                metricType: metric.type,
+                                snapshots: viewModel.snapshotsForChart,
+                                periodTitle: viewModel.periodTitle
+                            )) {
+                                MetricCard(metric: metric)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal)

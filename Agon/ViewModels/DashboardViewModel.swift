@@ -113,6 +113,16 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    var snapshotsForChart: [DailySnapshot] {
+        switch selectedPeriod {
+        case .today:
+            // Show past 7 days for context even when viewing today
+            return weekSnapshots.isEmpty ? (snapshot.map { [$0] } ?? []) : weekSnapshots
+        case .last7Days, .thisWeek:
+            return weekSnapshots
+        }
+    }
+
     func selectPeriod(_ period: DashboardPeriod) async {
         selectedPeriod = period
         aggregationMode = .total
@@ -121,6 +131,10 @@ final class DashboardViewModel: ObservableObject {
             showWeekSummary = false
             selectedDate = .now
             await loadData()
+            // Load week data in background for charts
+            if weekSnapshots.isEmpty {
+                await loadLast7Days()
+            }
         case .last7Days:
             showWeekSummary = true
             await loadLast7Days()
