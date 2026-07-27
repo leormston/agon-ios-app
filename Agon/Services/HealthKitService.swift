@@ -148,17 +148,19 @@ final class HealthKitService: ObservableObject {
     // MARK: - Fetch Full Snapshot
 
     func fetchTodaySnapshot() async -> DailySnapshot {
-        let today = Date.now
+        return await fetchSnapshot(for: .now)
+    }
 
-        async let steps = fetchSteps(for: today)
-        async let distanceWalked = fetchDistanceWalked(for: today)
-        async let distanceRan = fetchDistanceRan(for: today)
-        async let sleep = fetchSleep(for: today)
-        async let daylight = fetchTimeInDaylight(for: today)
-        async let exercise = fetchExerciseMinutes(for: today)
+    func fetchSnapshot(for date: Date) async -> DailySnapshot {
+        async let steps = fetchSteps(for: date)
+        async let distanceWalked = fetchDistanceWalked(for: date)
+        async let distanceRan = fetchDistanceRan(for: date)
+        async let sleep = fetchSleep(for: date)
+        async let daylight = fetchTimeInDaylight(for: date)
+        async let exercise = fetchExerciseMinutes(for: date)
 
         return await DailySnapshot(
-            date: today,
+            date: date,
             steps: steps,
             distanceWalked: distanceWalked,
             distanceRan: distanceRan,

@@ -78,6 +78,19 @@ exports.handler = async (event) => {
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getChallengeDetails(userId, pathParameters?.challengeId);
 
+      case "DELETE /challenges/{challengeId}":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await deleteChallenge(userId, pathParameters?.challengeId);
+
+      case "POST /challenges/{challengeId}/leave":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await leaveChallenge(userId, pathParameters?.challengeId);
+
+      // Users
+      case "GET /users/{userId}":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getUserProfile(pathParameters?.userId);
+
       // Friends
       case "POST /friends/request":
         if (!userId) return response(401, { error: "Unauthorized" });
@@ -187,23 +200,35 @@ async function updateProfile(userId, data) {
 // MARK: - Health Sync
 
 async function syncHealth(userId, data) {
-  const date = data.date || new Date().toISOString().split("T")[0];
+  // Support both single day {date, metrics} and multiple days {days: [{date, metrics}, ...]}
+  const days = data.days
+    ? data.days
+    : [{ date: data.date, metrics: data.metrics }];
 
-  const item = {
-    userId,
-    date,
-    metrics: data.metrics || {},
-    syncedAt: new Date().toISOString(),
-  };
+  const syncedAt = new Date().toISOString();
+  const syncedDates = [];
 
-  await dynamo.send(
-    new PutCommand({
-      TableName: HEALTH_SNAPSHOTS_TABLE,
-      Item: item,
-    })
-  );
+  for (const day of days) {
+    const date = day.date || new Date().toISOString().split("T")[0];
 
-  return response(200, { message: "Health data synced", date });
+    const item = {
+      userId,
+      date,
+      metrics: day.metrics || {},
+      syncedAt,
+    };
+
+    await dynamo.send(
+      new PutCommand({
+        TableName: HEALTH_SNAPSHOTS_TABLE,
+        Item: item,
+      })
+    );
+
+    syncedDates.push(date);
+  }
+
+  return response(200, { message: "Health data synced", dates: syncedDates });
 }
 
 // MARK: - Leaderboard
@@ -461,6 +486,144 @@ async function getChallengeDetails(userId, challengeId) {
   return response(200, {
     ...challenge,
     scores,
+  });
+}
+
+async function deleteChallenge(userId, challengeId) {
+  if (!challengeId) {
+    return response(400, { error: "challengeId is required" });
+  }
+
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: CHALLENGES_TABLE,
+      Key: { challengeId },
+    })
+  );
+
+  if (!result.Item) {
+    return response(404, { error: "Challenge not found" });
+  }
+
+  if (result.Item.creatorId !== userId) {
+    return response(403, { error: "Only the challenge creator can delete this challenge" });
+  }
+
+  await dynamo.send(
+    new DeleteCommand({
+      TableName: CHALLENGES_TABLE,
+      Key: { challengeId },
+    })
+  );
+
+  return response(200, { message: "Challenge deleted", challengeId });
+}
+
+async function leaveChallenge(userId, challengeId) {
+  if (!challengeId) {
+    return response(400, { error: "challengeId is required" });
+  }
+
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: CHALLENGES_TABLE,
+      Key: { challengeId },
+    })
+  );
+
+  if (!result.Item) {
+    return response(404, { error: "Challenge not found" });
+  }
+
+  const challenge = result.Item;
+
+  if (!challenge.participants.includes(userId)) {
+    return response(400, { error: "Not a participant in this challenge" });
+  }
+
+  const updatedParticipants = challenge.participants.filter((p) => p !== userId);
+
+  // If no participants left, delete the challenge
+  if (updatedParticipants.length === 0) {
+    await dynamo.send(
+      new DeleteCommand({
+        TableName: CHALLENGES_TABLE,
+        Key: { challengeId },
+      })
+    );
+    return response(200, { message: "Left challenge. Challenge deleted (no participants remaining)", challengeId });
+  }
+
+  // Otherwise update participants list
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: CHALLENGES_TABLE,
+      Key: { challengeId },
+      UpdateExpression: "SET participants = :participants",
+      ExpressionAttributeValues: {
+        ":participants": updatedParticipants,
+      },
+    })
+  );
+
+  return response(200, { message: "Left challenge", challengeId });
+}
+
+// MARK: - User Profile by ID
+
+async function getUserProfile(targetUserId) {
+  if (!targetUserId) {
+    return response(400, { error: "userId is required" });
+  }
+
+  // Get user profile
+  const userResult = await dynamo.send(
+    new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { userId: targetUserId },
+    })
+  );
+
+  if (!userResult.Item) {
+    return response(404, { error: "User not found" });
+  }
+
+  // Get recent health snapshots (last 7 days)
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const startDate = sevenDaysAgo.toISOString().split("T")[0];
+  const endDate = today.toISOString().split("T")[0];
+
+  const snapshotsResult = await dynamo.send(
+    new QueryCommand({
+      TableName: HEALTH_SNAPSHOTS_TABLE,
+      KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+      ExpressionAttributeNames: { "#d": "date" },
+      ExpressionAttributeValues: {
+        ":userId": targetUserId,
+        ":start": startDate,
+        ":end": endDate,
+      },
+    })
+  );
+
+  // Get active challenges count
+  const challengesResult = await dynamo.send(
+    new ScanCommand({
+      TableName: CHALLENGES_TABLE,
+      FilterExpression: "contains(participants, :userId) AND #s = :active",
+      ExpressionAttributeNames: { "#s": "status" },
+      ExpressionAttributeValues: {
+        ":userId": targetUserId,
+        ":active": "active",
+      },
+    })
+  );
+
+  return response(200, {
+    ...userResult.Item,
+    recentSnapshots: snapshotsResult.Items || [],
+    activeChallengesCount: (challengesResult.Items || []).length,
   });
 }
 

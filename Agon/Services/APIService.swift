@@ -211,6 +211,39 @@ final class APIService: ObservableObject {
         return try JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
 
+    func deleteChallenge(challengeId: String) async throws {
+        let (_, response) = try await request(method: "DELETE", path: "/challenges/\(challengeId)")
+        guard response.statusCode == 200 else {
+            throw APIError.challengeDeletionFailed
+        }
+    }
+
+    func leaveChallenge(challengeId: String) async throws {
+        let (_, response) = try await request(method: "POST", path: "/challenges/\(challengeId)/leave")
+        guard response.statusCode == 200 else {
+            throw APIError.challengeLeaveFailed
+        }
+    }
+
+    // MARK: - User Profile
+
+    func getUserProfile(userId: String) async throws -> [String: Any]? {
+        let (data, response) = try await request(method: "GET", path: "/users/\(userId)")
+        guard response.statusCode == 200 else { return nil }
+        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
+
+    // MARK: - Multi-day Sync
+
+    func syncMultipleDays(days: [[String: Any]]) async throws {
+        let body: [String: Any] = ["days": days]
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        let (_, response) = try await request(method: "POST", path: "/health/sync", body: jsonData)
+        guard response.statusCode == 200 else {
+            throw APIError.syncFailed
+        }
+    }
+
     // MARK: - Networking
 
     private func request(
@@ -272,6 +305,8 @@ enum APIError: LocalizedError {
     case syncFailed
     case challengeCreationFailed
     case challengeJoinFailed
+    case challengeDeletionFailed
+    case challengeLeaveFailed
     case friendRequestFailed
 
     var errorDescription: String? {
@@ -283,6 +318,8 @@ enum APIError: LocalizedError {
         case .syncFailed: return "Failed to sync health data"
         case .challengeCreationFailed: return "Failed to create challenge"
         case .challengeJoinFailed: return "Failed to join challenge"
+        case .challengeDeletionFailed: return "Failed to delete challenge"
+        case .challengeLeaveFailed: return "Failed to leave challenge"
         case .friendRequestFailed: return "Friend request failed"
         }
     }
