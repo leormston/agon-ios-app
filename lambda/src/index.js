@@ -89,7 +89,7 @@ exports.handler = async (event) => {
       // Users
       case "GET /users/{userId}":
         if (!userId) return response(401, { error: "Unauthorized" });
-        return await getUserProfile(pathParameters?.userId);
+        return await getUserProfile(pathParameters?.userId, userId);
 
       // Friends
       case "POST /friends/request":
@@ -571,7 +571,7 @@ async function leaveChallenge(userId, challengeId) {
 
 // MARK: - User Profile by ID
 
-async function getUserProfile(targetUserId) {
+async function getUserProfile(targetUserId, currentUserId) {
   if (!targetUserId) {
     return response(400, { error: "userId is required" });
   }
@@ -607,6 +607,24 @@ async function getUserProfile(targetUserId) {
     })
   );
 
+  // Get current user's snapshots for comparison
+  let yourSnapshots = [];
+  if (currentUserId && currentUserId !== targetUserId) {
+    const yourResult = await dynamo.send(
+      new QueryCommand({
+        TableName: HEALTH_SNAPSHOTS_TABLE,
+        KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+        ExpressionAttributeNames: { "#d": "date" },
+        ExpressionAttributeValues: {
+          ":userId": currentUserId,
+          ":start": startDate,
+          ":end": endDate,
+        },
+      })
+    );
+    yourSnapshots = yourResult.Items || [];
+  }
+
   // Get active challenges count
   const challengesResult = await dynamo.send(
     new ScanCommand({
@@ -623,6 +641,7 @@ async function getUserProfile(targetUserId) {
   return response(200, {
     ...userResult.Item,
     recentSnapshots: snapshotsResult.Items || [],
+    yourSnapshots,
     activeChallengesCount: (challengesResult.Items || []).length,
   });
 }
