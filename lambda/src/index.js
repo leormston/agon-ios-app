@@ -89,7 +89,7 @@ exports.handler = async (event) => {
       // Users
       case "GET /users/{userId}":
         if (!userId) return response(401, { error: "Unauthorized" });
-        return await getUserProfile(pathParameters?.userId);
+        return await getUserProfile(pathParameters?.userId, userId);
 
       // Friends
       case "POST /friends/request":
@@ -177,24 +177,57 @@ async function getProfile(userId) {
 }
 
 async function updateProfile(userId, data) {
-  const item = {
-    userId,
-    email: data.email || null,
-    displayName: data.displayName || null,
-    provider: data.provider || null,
-    avatarUrl: data.avatarUrl || null,
-    createdAt: data.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  // Build update expression dynamically - only update fields that are provided
+  const updates = [];
+  const names = {};
+  const values = {};
+
+  if (data.email !== undefined) {
+    updates.push("#email = :email");
+    names["#email"] = "email";
+    values[":email"] = data.email;
+  }
+  if (data.displayName !== undefined) {
+    updates.push("#displayName = :displayName");
+    names["#displayName"] = "displayName";
+    values[":displayName"] = data.displayName;
+  }
+  if (data.provider !== undefined) {
+    updates.push("#provider = :provider");
+    names["#provider"] = "provider";
+    values[":provider"] = data.provider;
+  }
+  if (data.avatarUrl !== undefined) {
+    updates.push("#avatarUrl = :avatarUrl");
+    names["#avatarUrl"] = "avatarUrl";
+    values[":avatarUrl"] = data.avatarUrl;
+  }
+
+  updates.push("#updatedAt = :updatedAt");
+  names["#updatedAt"] = "updatedAt";
+  values[":updatedAt"] = new Date().toISOString();
+
+  // Set createdAt only if it doesn't exist
+  updates.push("#createdAt = if_not_exists(#createdAt, :createdAt)");
+  names["#createdAt"] = "createdAt";
+  values[":createdAt"] = data.createdAt || new Date().toISOString();
 
   await dynamo.send(
-    new PutCommand({
+    new UpdateCommand({
       TableName: USERS_TABLE,
-      Item: item,
+      Key: { userId },
+      UpdateExpression: "SET " + updates.join(", "),
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: values,
     })
   );
 
-  return response(200, item);
+  // Return the full profile
+  const result = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+
+  return response(200, result.Item);
 }
 
 // MARK: - Health Sync
@@ -571,7 +604,7 @@ async function leaveChallenge(userId, challengeId) {
 
 // MARK: - User Profile by ID
 
-async function getUserProfile(targetUserId) {
+async function getUserProfile(targetUserId, currentUserId) {
   if (!targetUserId) {
     return response(400, { error: "userId is required" });
   }
@@ -607,6 +640,24 @@ async function getUserProfile(targetUserId) {
     })
   );
 
+  // Get current user's snapshots for comparison
+  let yourSnapshots = [];
+  if (currentUserId && currentUserId !== targetUserId) {
+    const yourResult = await dynamo.send(
+      new QueryCommand({
+        TableName: HEALTH_SNAPSHOTS_TABLE,
+        KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+        ExpressionAttributeNames: { "#d": "date" },
+        ExpressionAttributeValues: {
+          ":userId": currentUserId,
+          ":start": startDate,
+          ":end": endDate,
+        },
+      })
+    );
+    yourSnapshots = yourResult.Items || [];
+  }
+
   // Get active challenges count
   const challengesResult = await dynamo.send(
     new ScanCommand({
@@ -623,6 +674,7 @@ async function getUserProfile(targetUserId) {
   return response(200, {
     ...userResult.Item,
     recentSnapshots: snapshotsResult.Items || [],
+    yourSnapshots,
     activeChallengesCount: (challengesResult.Items || []).length,
   });
 }

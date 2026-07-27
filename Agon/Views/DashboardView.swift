@@ -12,7 +12,7 @@ struct DashboardView: View {
                         Text(viewModel.greeting)
                             .font(.subheadline)
                             .foregroundStyle(Color.agonTextSecondary)
-                        Text(viewModel.showWeekSummary ? "Your Week" : "Your Health Today")
+                        Text(viewModel.periodTitle)
                             .font(.title.bold())
                             .foregroundStyle(Color.agonTextPrimary)
                     }
@@ -20,54 +20,52 @@ struct DashboardView: View {
                 }
                 .padding(.horizontal)
 
-                // Date Navigation
-                HStack(spacing: 16) {
-                    Button {
-                        Task { await viewModel.goBack() }
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundStyle(viewModel.canGoBack ? Color.agonAccent : Color.agonBorder)
+                // Time Period Tabs
+                HStack(spacing: 0) {
+                    DashboardTab(title: "Today", isSelected: viewModel.selectedPeriod == .today) {
+                        Task { await viewModel.selectPeriod(.today) }
                     }
-                    .disabled(!viewModel.canGoBack || viewModel.showWeekSummary)
-
-                    Spacer()
-
-                    Text(viewModel.showWeekSummary ? "Past 7 Days" : viewModel.selectedDateLabel)
-                        .font(.subheadline.bold())
-                        .foregroundStyle(Color.agonTextPrimary)
-
-                    Spacer()
-
-                    Button {
-                        Task { await viewModel.goForward() }
-                    } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.headline)
-                            .foregroundStyle(viewModel.canGoForward ? Color.agonAccent : Color.agonBorder)
+                    DashboardTab(title: "Last 7 Days", isSelected: viewModel.selectedPeriod == .last7Days) {
+                        Task { await viewModel.selectPeriod(.last7Days) }
                     }
-                    .disabled(!viewModel.canGoForward || viewModel.showWeekSummary)
+                    DashboardTab(title: "This Week", isSelected: viewModel.selectedPeriod == .thisWeek) {
+                        Task { await viewModel.selectPeriod(.thisWeek) }
+                    }
                 }
+                .background(Color.agonSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal)
 
-                // Week Toggle
-                Button {
-                    Task { await viewModel.toggleWeekSummary() }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: viewModel.showWeekSummary ? "calendar.circle.fill" : "calendar.circle")
-                            .font(.subheadline)
-                        Text(viewModel.showWeekSummary ? "Show Day" : "Week Summary")
-                            .font(.caption.bold())
+                // Total / Average toggle (shown for Last 7 Days and This Week)
+                if viewModel.selectedPeriod != .today {
+                    HStack(spacing: 0) {
+                        Button {
+                            viewModel.aggregationMode = .total
+                        } label: {
+                            Text("Total")
+                                .font(.caption.bold())
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(viewModel.aggregationMode == .total ? Color.agonAccent : Color.clear)
+                                .foregroundStyle(viewModel.aggregationMode == .total ? .white : Color.agonTextSecondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        Button {
+                            viewModel.aggregationMode = .average
+                        } label: {
+                            Text("Average")
+                                .font(.caption.bold())
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(viewModel.aggregationMode == .average ? Color.agonAccent : Color.clear)
+                                .foregroundStyle(viewModel.aggregationMode == .average ? .white : Color.agonTextSecondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(viewModel.showWeekSummary ? Color.agonAccent : Color.agonSurface)
-                    .foregroundStyle(viewModel.showWeekSummary ? .white : Color.agonTextPrimary)
-                    .clipShape(Capsule())
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
-                .frame(maxWidth: .infinity, alignment: .trailing)
 
                 // Loading / Error / Metric Cards
                 if viewModel.isLoading && viewModel.snapshot == nil && viewModel.weekSnapshots.isEmpty {
@@ -86,10 +84,10 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
                     .padding(.horizontal)
                 } else {
-                    // Week summary label
-                    if viewModel.showWeekSummary {
+                    // Aggregation label
+                    if viewModel.selectedPeriod == .thisWeek || viewModel.selectedPeriod == .last7Days {
                         HStack {
-                            Text("Totals (avg sleep)")
+                            Text(viewModel.aggregationMode == .total ? "Totals" : "Daily Average")
                                 .font(.caption)
                                 .foregroundStyle(Color.agonTextSecondary)
                             Spacer()
@@ -253,6 +251,26 @@ struct CircularProgressView: View {
                 .foregroundStyle(Color.agonTextPrimary)
         }
         .frame(width: 50, height: 50)
+    }
+}
+
+// MARK: - Dashboard Tab
+
+struct DashboardTab: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.bold())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(isSelected ? Color.agonAccent : Color.clear)
+                .foregroundStyle(isSelected ? .white : Color.agonTextSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
     }
 }
 
