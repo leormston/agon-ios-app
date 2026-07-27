@@ -114,13 +114,7 @@ final class DashboardViewModel: ObservableObject {
     }
 
     var snapshotsForChart: [DailySnapshot] {
-        switch selectedPeriod {
-        case .today:
-            // Show past 7 days for context even when viewing today
-            return weekSnapshots.isEmpty ? (snapshot.map { [$0] } ?? []) : weekSnapshots
-        case .last7Days, .thisWeek:
-            return weekSnapshots
-        }
+        return weekSnapshots
     }
 
     func selectPeriod(_ period: DashboardPeriod) async {
@@ -191,6 +185,7 @@ final class DashboardViewModel: ObservableObject {
 
         if healthService.isAuthorized {
             await loadData()
+            await loadLast7Days()
             await syncPast7Days()
         } else if let error = healthService.authorizationError {
             errorMessage = error
