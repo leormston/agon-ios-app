@@ -384,8 +384,14 @@ struct FriendProfileView: View {
             if profile == nil {
                 errorMessage = "Profile not found"
             }
+        } catch is CancellationError {
+            // Ignore - task cancelled by SwiftUI
+        } catch let error as NSError where error.code == -999 {
+            // Ignore - URLSession request cancelled
         } catch {
-            errorMessage = "Failed to load profile"
+            if profile == nil {
+                errorMessage = "Failed to load profile"
+            }
             print("Load profile error: \(error)")
         }
 
