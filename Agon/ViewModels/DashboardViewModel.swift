@@ -127,7 +127,7 @@ final class DashboardViewModel: ObservableObject {
             await loadData()
             // Load week data in background for charts
             if weekSnapshots.isEmpty {
-                await loadLast7Days()
+                await loadWeekSnapshotsInBackground()
             }
         case .last7Days:
             showWeekSummary = true
@@ -152,6 +152,16 @@ final class DashboardViewModel: ObservableObject {
         }
         weekSnapshots = snapshots
         isLoading = false
+    }
+
+    private func loadWeekSnapshotsInBackground() async {
+        var snapshots: [DailySnapshot] = []
+        for dayOffset in 0..<7 {
+            let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
+            let snap = await healthService.fetchSnapshot(for: date)
+            snapshots.append(snap)
+        }
+        weekSnapshots = snapshots
     }
 
     private func loadThisWeek() async {
@@ -185,7 +195,7 @@ final class DashboardViewModel: ObservableObject {
 
         if healthService.isAuthorized {
             await loadData()
-            await loadLast7Days()
+            await loadWeekSnapshotsInBackground()
             await syncPast7Days()
         } else if let error = healthService.authorizationError {
             errorMessage = error
