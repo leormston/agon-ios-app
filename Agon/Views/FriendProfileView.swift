@@ -285,17 +285,23 @@ struct FriendProfileView: View {
     private func datesForPeriod() -> Set<String> {
         let calendar = Calendar.current
         let today = Date.now
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        let utcFormatter = DateFormatter()
+        utcFormatter.dateFormat = "yyyy-MM-dd"
+        utcFormatter.timeZone = TimeZone(identifier: "UTC")
+        let localFormatter = DateFormatter()
+        localFormatter.dateFormat = "yyyy-MM-dd"
+        localFormatter.timeZone = .current
 
         switch selectedPeriod {
         case .today:
-            return [formatter.string(from: today)]
+            // Include both UTC and local date to handle timezone boundary
+            return [utcFormatter.string(from: today), localFormatter.string(from: today)]
         case .last7Days:
             var dates = Set<String>()
             for i in 0..<7 {
                 let date = calendar.date(byAdding: .day, value: -i, to: today)!
-                dates.insert(formatter.string(from: date))
+                dates.insert(utcFormatter.string(from: date))
+                dates.insert(localFormatter.string(from: date))
             }
             return dates
         case .thisWeek:
@@ -304,7 +310,8 @@ struct FriendProfileView: View {
             var dates = Set<String>()
             for i in 0...daysSinceMonday {
                 let date = calendar.date(byAdding: .day, value: -i, to: today)!
-                dates.insert(formatter.string(from: date))
+                dates.insert(utcFormatter.string(from: date))
+                dates.insert(localFormatter.string(from: date))
             }
             return dates
         }
