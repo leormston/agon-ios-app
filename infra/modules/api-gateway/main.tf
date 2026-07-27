@@ -103,6 +103,24 @@ resource "aws_apigatewayv2_route" "get_challenge" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "delete_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /challenges/{challengeId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "leave_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /challenges/{challengeId}/leave"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_user_by_id" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /users/{userId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Friends routes
 resource "aws_apigatewayv2_route" "send_friend_request" {
   api_id    = aws_apigatewayv2_api.main.id

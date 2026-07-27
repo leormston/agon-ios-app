@@ -117,18 +117,23 @@ struct CommunityView: View {
                     } else {
                         ForEach(viewModel.friends) { friend in
                             HStack {
-                                Circle()
-                                    .fill(Color.agonAccent.opacity(0.2))
-                                    .frame(width: 36, height: 36)
-                                    .overlay {
-                                        Text(String(friend.displayName.prefix(1)))
-                                            .font(.caption.bold())
-                                            .foregroundStyle(Color.agonAccent)
-                                    }
+                                NavigationLink(destination: FriendProfileView(userId: friend.id, displayName: friend.displayName)) {
+                                    HStack {
+                                        Circle()
+                                            .fill(Color.agonAccent.opacity(0.2))
+                                            .frame(width: 36, height: 36)
+                                            .overlay {
+                                                Text(String(friend.displayName.prefix(1)))
+                                                    .font(.caption.bold())
+                                                    .foregroundStyle(Color.agonAccent)
+                                            }
 
-                                Text(friend.displayName)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.agonTextPrimary)
+                                        Text(friend.displayName)
+                                            .font(.subheadline)
+                                            .foregroundStyle(Color.agonTextPrimary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
 
                                 Spacer()
 

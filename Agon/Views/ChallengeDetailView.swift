@@ -2,8 +2,18 @@ import SwiftUI
 
 struct ChallengeDetailView: View {
     let challenge: Challenge
-    @State private var scores: [(name: String, score: Int, isCurrentUser: Bool, avatarUrl: String?)] = []
+    @Environment(\.dismiss) private var dismiss
+    @State private var scores: [(name: String, score: Int, isCurrentUser: Bool, avatarUrl: String?, userId: String)] = []
     @State private var isLoading = true
+    @State private var showDeleteConfirmation = false
+    @State private var showLeaveConfirmation = false
+    @State private var isProcessing = false
+    @State private var errorMessage: String?
+
+    private var isCreator: Bool {
+        let currentUserId = AuthService.shared.currentUser?.id ?? ""
+        return challenge.creatorId == currentUserId
+    }
 
     var body: some View {
         ScrollView {
@@ -63,57 +73,73 @@ struct ChallengeDetailView: View {
                             .padding()
                     } else {
                         ForEach(Array(scores.enumerated()), id: \.offset) { index, entry in
-                            HStack {
-                                Text("\(index + 1)")
-                                    .font(.headline)
-                                    .frame(width: 24)
-                                    .foregroundStyle(index < 3 ? Color.agonAccent : Color.agonTextSecondary)
-
-                                if let avatarUrl = entry.avatarUrl, let url = URL(string: avatarUrl) {
-                                    AsyncImage(url: url) { image in
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
-                                    } placeholder: {
-                                        Circle()
-                                            .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
-                                            .overlay {
-                                                Text(String(entry.name.prefix(1)))
-                                                    .font(.caption.bold())
-                                                    .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
-                                            }
-                                    }
-                                    .frame(width: 32, height: 32)
-                                    .clipShape(Circle())
-                                } else {
-                                    Circle()
-                                        .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
-                                        .frame(width: 32, height: 32)
-                                        .overlay {
-                                            Text(String(entry.name.prefix(1)))
-                                                .font(.caption.bold())
-                                                .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
-                                        }
-                                }
-
-                                Text(entry.name)
-                                    .font(.subheadline)
-                                    .bold(entry.isCurrentUser)
-                                    .foregroundStyle(Color.agonTextPrimary)
-
-                                Spacer()
-
-                                Text("\(entry.score) \(challenge.metricType?.unit ?? "")")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.agonTextSecondary)
+                            NavigationLink(destination: FriendProfileView(userId: entry.userId, displayName: entry.name)) {
+                                leaderboardRow(index: index, entry: entry)
                             }
-                            .padding(.vertical, 4)
+                            .buttonStyle(.plain)
                         }
                     }
                 }
                 .padding()
                 .background(Color.agonSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                // Error message
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal)
+                }
+
+                // Delete / Leave Button
+                if isCreator {
+                    Button {
+                        showDeleteConfirmation = true
+                    } label: {
+                        HStack {
+                            if isProcessing {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "trash")
+                            }
+                            Text("Delete Challenge")
+                                .font(.subheadline.bold())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.red)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(isProcessing)
+                } else {
+                    Button {
+                        showLeaveConfirmation = true
+                    } label: {
+                        HStack {
+                            if isProcessing {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                            }
+                            Text("Leave Challenge")
+                                .font(.subheadline.bold())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.agonSurface)
+                        .foregroundStyle(Color.agonTextPrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.agonBorder, lineWidth: 1)
+                        )
+                    }
+                    .disabled(isProcessing)
+                }
             }
             .padding()
         }
@@ -123,7 +149,76 @@ struct ChallengeDetailView: View {
         .task {
             await loadScores()
         }
+        .alert("Delete Challenge", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                Task { await deleteChallenge() }
+            }
+        } message: {
+            Text("Are you sure you want to delete this challenge? This cannot be undone.")
+        }
+        .alert("Leave Challenge", isPresented: $showLeaveConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Leave", role: .destructive) {
+                Task { await leaveChallenge() }
+            }
+        } message: {
+            Text("Are you sure you want to leave this challenge?")
+        }
     }
+
+    // MARK: - Leaderboard Row
+
+    @ViewBuilder
+    private func leaderboardRow(index: Int, entry: (name: String, score: Int, isCurrentUser: Bool, avatarUrl: String?, userId: String)) -> some View {
+        HStack {
+            Text("\(index + 1)")
+                .font(.headline)
+                .frame(width: 24)
+                .foregroundStyle(index < 3 ? Color.agonAccent : Color.agonTextSecondary)
+
+            if let avatarUrl = entry.avatarUrl, let url = URL(string: avatarUrl) {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
+                        .overlay {
+                            Text(String(entry.name.prefix(1)))
+                                .font(.caption.bold())
+                                .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
+                        }
+                }
+                .frame(width: 32, height: 32)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonBorder)
+                    .frame(width: 32, height: 32)
+                    .overlay {
+                        Text(String(entry.name.prefix(1)))
+                            .font(.caption.bold())
+                            .foregroundStyle(entry.isCurrentUser ? .white : Color.agonTextPrimary)
+                    }
+            }
+
+            Text(entry.name)
+                .font(.subheadline)
+                .bold(entry.isCurrentUser)
+                .foregroundStyle(Color.agonTextPrimary)
+
+            Spacer()
+
+            Text("\(entry.score) \(challenge.metricType?.unit ?? "")")
+                .font(.subheadline)
+                .foregroundStyle(Color.agonTextSecondary)
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Helpers
 
     private var durationText: String {
         let formatter = ISO8601DateFormatter()
@@ -150,7 +245,8 @@ struct ChallengeDetailView: View {
                         name: p["displayName"] as? String ?? "User",
                         score: p["score"] as? Int ?? 0,
                         isCurrentUser: (p["userId"] as? String) == currentUserId,
-                        avatarUrl: p["avatarUrl"] as? String
+                        avatarUrl: p["avatarUrl"] as? String,
+                        userId: p["userId"] as? String ?? ""
                     )
                 }
             }
@@ -158,6 +254,34 @@ struct ChallengeDetailView: View {
             print("Failed to load challenge scores: \(error)")
         }
         isLoading = false
+    }
+
+    private func deleteChallenge() async {
+        isProcessing = true
+        errorMessage = nil
+
+        do {
+            try await APIService.shared.deleteChallenge(challengeId: challenge.id)
+            dismiss()
+        } catch {
+            errorMessage = "Failed to delete challenge. Please try again."
+        }
+
+        isProcessing = false
+    }
+
+    private func leaveChallenge() async {
+        isProcessing = true
+        errorMessage = nil
+
+        do {
+            try await APIService.shared.leaveChallenge(challengeId: challenge.id)
+            dismiss()
+        } catch {
+            errorMessage = "Failed to leave challenge. Please try again."
+        }
+
+        isProcessing = false
     }
 }
 
