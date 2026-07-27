@@ -32,11 +32,15 @@ struct ContentView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Image("AgonLogo")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 30, height: 30)
-                        .clipShape(Circle())
+                    Button {
+                        selectedTab = 0
+                    } label: {
+                        Image("AgonLogo")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 30, height: 30)
+                            .clipShape(Circle())
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
