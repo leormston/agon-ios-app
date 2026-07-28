@@ -169,22 +169,12 @@ struct MetricDetailView: View {
                     RuleMark(y: .value("Average", average))
                         .foregroundStyle(Color.agonSecondary.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
-                        .annotation(position: .top, alignment: .leading) {
-                            Text("Avg")
-                                .font(.caption2)
-                                .foregroundStyle(Color.agonSecondary)
-                        }
 
                     // Goal line (if applicable)
                     if let goal = goalForMetric {
                         RuleMark(y: .value("Goal", goal))
                             .foregroundStyle(Color.agonAccent.opacity(0.5))
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
-                            .annotation(position: .top, alignment: .trailing) {
-                                Text("Goal")
-                                    .font(.caption2)
-                                    .foregroundStyle(Color.agonAccent)
-                            }
                     }
                 }
                 .chartXAxis {
