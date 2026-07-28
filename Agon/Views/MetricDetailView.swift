@@ -128,6 +128,29 @@ struct MetricDetailView: View {
                 Spacer()
             }
 
+            // Goal and Average info
+            HStack(spacing: 16) {
+                HStack(spacing: 4) {
+                    Rectangle()
+                        .stroke(Color.agonSecondary, style: StrokeStyle(lineWidth: 2, dash: [4, 2]))
+                        .frame(width: 14, height: 2)
+                    Text("Avg: \(formatValue(average))")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonSecondary)
+                }
+                if let goal = goalForMetric {
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .stroke(Color.agonAccent, style: StrokeStyle(lineWidth: 2, dash: [6, 3]))
+                            .frame(width: 14, height: 2)
+                        Text("Goal: \(formatValue(goal))")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonAccent)
+                    }
+                }
+                Spacer()
+            }
+
             if chartData.isEmpty {
                 Text("No data available")
                     .font(.subheadline)
@@ -192,9 +215,28 @@ struct MetricDetailView: View {
                                         }
                                     }
                                     .onEnded { _ in
-                                        // Keep selection visible
                                     }
                             )
+                            .overlay {
+                                if let point = selectedPoint,
+                                   let xPos = proxy.position(forX: point.date),
+                                   let yPos = proxy.position(forY: point.value) {
+                                    VStack(spacing: 2) {
+                                        Text(formatValue(point.value))
+                                            .font(.caption.bold())
+                                            .foregroundStyle(Color.agonAccent)
+                                        Text(shortDateLabel(point.date))
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(Color.agonTextSecondary)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.agonSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
+                                    .position(x: xPos, y: yPos - 30)
+                                }
+                            }
                     }
                 }
                 .frame(height: 240)
@@ -249,23 +291,6 @@ struct MetricDetailView: View {
             )
             .foregroundStyle(point.value >= average ? Color.green : Color.agonTextSecondary)
             .symbolSize(selectedPoint?.date == point.date ? 80 : 40)
-            .annotation(position: .top, spacing: 8) {
-                if selectedPoint?.date == point.date {
-                    VStack(spacing: 2) {
-                        Text(formatValue(point.value))
-                            .font(.caption.bold())
-                            .foregroundStyle(Color.agonAccent)
-                        Text(shortDateLabel(point.date))
-                            .font(.system(size: 9))
-                            .foregroundStyle(Color.agonTextSecondary)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.agonSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
-                }
-            }
 
             // Min/max annotations
             if point.value == best {
