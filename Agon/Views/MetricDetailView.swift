@@ -57,13 +57,54 @@ struct MetricDetailView: View {
     private func loadAllSnapshots() async {
         isLoadingWeeks = true
         let healthService = HealthKitService.shared
-        var loaded: [DailySnapshot] = []
+        let calendar = Calendar.current
+
+        // Load from HealthKit (local device data)
+        var healthKitSnapshots: [DailySnapshot] = []
         for dayOffset in 0..<30 {
-            let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
+            let date = calendar.date(byAdding: .day, value: -dayOffset, to: .now)!
             let snap = await healthService.fetchSnapshot(for: date)
-            loaded.append(snap)
+            healthKitSnapshots.append(snap)
         }
-        allSnapshots = loaded
+
+        // Load from backend (data from any source - Strava, Garmin, etc)
+        var backendSnapshots: [DailySnapshot] = []
+        if let rawSnapshots = try? await APIService.shared.getMySnapshots(days: 30) {
+            for raw in rawSnapshots {
+                if let dateStr = raw["date"] as? String,
+                   let metrics = raw["metrics"] as? [String: Any] {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    if let date = formatter.date(from: dateStr) {
+                        let snap = DailySnapshot(
+                            date: date,
+                            steps: (metrics["steps"] as? Double) ?? 0,
+                            distanceWalked: (metrics["distanceWalked"] as? Double) ?? 0,
+                            distanceRan: (metrics["distanceRan"] as? Double) ?? 0,
+                            totalSleep: (metrics["totalSleep"] as? Double) ?? 0,
+                            timeInDaylight: (metrics["timeInDaylight"] as? Double) ?? 0,
+                            exerciseMinutes: (metrics["exerciseMinutes"] as? Double) ?? 0
+                        )
+                        backendSnapshots.append(snap)
+                    }
+                }
+            }
+        }
+
+        // Merge: prefer HealthKit data for days that have it, use backend for others
+        var merged: [Date: DailySnapshot] = [:]
+        for snap in backendSnapshots {
+            merged[calendar.startOfDay(for: snap.date)] = snap
+        }
+        for snap in healthKitSnapshots {
+            let day = calendar.startOfDay(for: snap.date)
+            // HealthKit overwrites backend if it has non-zero data
+            if snap.steps > 0 || snap.exerciseMinutes > 0 || snap.distanceWalked > 0 {
+                merged[day] = snap
+            }
+        }
+
+        allSnapshots = Array(merged.values)
         isLoadingWeeks = false
     }
 

@@ -60,6 +60,15 @@ final class APIService: ObservableObject {
         }
     }
 
+    // MARK: - Health History
+
+    func getMySnapshots(days: Int = 30) async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/health/history?days=\(days)")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return json?["snapshots"] as? [[String: Any]] ?? []
+    }
+
     // MARK: - Goals
 
     func syncGoals(_ goals: [String: Double]) async throws {

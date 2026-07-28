@@ -85,6 +85,12 @@ resource "aws_apigatewayv2_route" "sync_health" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "health_history" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /health/history"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "get_leaderboard" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /leaderboard/{challengeId}"

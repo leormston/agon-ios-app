@@ -57,6 +57,10 @@ exports.handler = async (event) => {
         if (!userId) return response(401, { error: "Unauthorized" });
         return await syncHealth(userId, JSON.parse(body));
 
+      case "GET /health/history":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getHealthHistory(userId, event.queryStringParameters);
+
       case "GET /leaderboard/{challengeId}":
         if (!userId) return response(401, { error: "Unauthorized" });
         const challengeId = pathParameters?.challengeId;
@@ -335,6 +339,30 @@ async function getLeaderboard(challengeId, currentUserId) {
     participants,
     totalParticipants: participants.length,
   });
+}
+
+// MARK: - Health History
+
+async function getHealthHistory(userId, queryParams) {
+  const days = parseInt(queryParams?.days || "30");
+  const today = new Date();
+  const startDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: HEALTH_SNAPSHOTS_TABLE,
+      KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+      ExpressionAttributeNames: { "#d": "date" },
+      ExpressionAttributeValues: {
+        ":userId": userId,
+        ":start": startDate.toISOString().split("T")[0],
+        ":end": today.toISOString().split("T")[0],
+      },
+      ScanIndexForward: true,
+    })
+  );
+
+  return response(200, { snapshots: result.Items || [] });
 }
 
 // MARK: - Challenges
