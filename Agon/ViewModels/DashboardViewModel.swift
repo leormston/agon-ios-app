@@ -36,7 +36,6 @@ final class DashboardViewModel: ObservableObject {
     private let maxDailySyncs = 10
     private let syncCountKey = "agon_sync_count"
     private let syncDateKey = "agon_sync_date"
-    private let past7DaysSyncKey = "agon_past7_sync_date"
 
     var metrics: [HealthMetric] {
         switch selectedPeriod {
@@ -157,7 +156,7 @@ final class DashboardViewModel: ObservableObject {
 
     private func loadWeekSnapshotsInBackground() async {
         var snapshots: [DailySnapshot] = []
-        for dayOffset in 0..<7 {
+        for dayOffset in 0..<30 {
             let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
             let snap = await healthService.fetchSnapshot(for: date)
             snapshots.append(snap)
@@ -197,7 +196,7 @@ final class DashboardViewModel: ObservableObject {
         if healthService.isAuthorized {
             await loadData()
             await loadWeekSnapshotsInBackground()
-            await syncPast7Days()
+            await syncPast30Days()
         } else if let error = healthService.authorizationError {
             errorMessage = error
             showPermissionAlert = true
@@ -280,17 +279,19 @@ final class DashboardViewModel: ObservableObject {
 
     // MARK: - 7-Day Sync
 
-    func syncPast7Days() async {
+    private let past30DaysSyncKey = "agon_past30_sync_date"
+
+    func syncPast30Days() async {
         // Only run once per day
         let today = Calendar.current.startOfDay(for: .now)
-        let lastSync = UserDefaults.standard.object(forKey: past7DaysSyncKey) as? Date ?? .distantPast
+        let lastSync = UserDefaults.standard.object(forKey: past30DaysSyncKey) as? Date ?? .distantPast
         let lastSyncDay = Calendar.current.startOfDay(for: lastSync)
         guard lastSyncDay < today else { return }
 
         var days: [[String: Any]] = []
         let calendar = Calendar.current
 
-        for offset in 0..<7 {
+        for offset in 0..<30 {
             guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
             let snap = await healthService.fetchSnapshot(for: date)
 
@@ -311,10 +312,10 @@ final class DashboardViewModel: ObservableObject {
 
         do {
             try await apiService.syncMultipleDays(days: days)
-            UserDefaults.standard.set(Date(), forKey: past7DaysSyncKey)
-            print("Past 7 days synced to backend")
+            UserDefaults.standard.set(Date(), forKey: past30DaysSyncKey)
+            print("Past 30 days synced to backend")
         } catch {
-            print("Past 7 days sync failed: \(error)")
+            print("Past 30 days sync failed: \(error)")
         }
     }
 

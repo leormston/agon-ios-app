@@ -10,6 +10,7 @@ struct MetricDetailView: View {
     @State private var showBarChart = false
     @State private var showFriendOverlay = false
     @State private var animateChart = false
+    @State private var weekOffset: Int = 0 // 0 = current week, -1 = last week, etc.
 
     @AppStorage("goal_steps") private var stepsGoal: Double = 10_000
     @AppStorage("goal_exerciseMinutes") private var exerciseGoal: Double = 30
@@ -121,11 +122,39 @@ struct MetricDetailView: View {
 
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Week navigation
             HStack {
-                Text("Daily Breakdown")
-                    .font(.headline)
-                    .foregroundStyle(Color.agonTextPrimary)
+                Button {
+                    withAnimation {
+                        weekOffset -= 1
+                        selectedPoint = nil
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .foregroundStyle(canGoBackWeek ? Color.agonAccent : Color.agonBorder)
+                }
+                .disabled(!canGoBackWeek)
+
                 Spacer()
+
+                Text(weekLabel)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Color.agonTextPrimary)
+
+                Spacer()
+
+                Button {
+                    withAnimation {
+                        weekOffset += 1
+                        selectedPoint = nil
+                    }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                        .foregroundStyle(canGoForwardWeek ? Color.agonAccent : Color.agonBorder)
+                }
+                .disabled(!canGoForwardWeek)
             }
 
             // Goal and Average info
@@ -400,16 +429,17 @@ struct MetricDetailView: View {
     // MARK: - Chart Data
 
     private var chartData: [ChartPoint] {
-        // Always show full Mon-Sun
+        // Show the week based on weekOffset (0 = current, -1 = last week, etc)
         let calendar = Calendar.current
         let today = Date.now
         let weekday = calendar.component(.weekday, from: today)
         let daysSinceMonday = (weekday + 5) % 7
-        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
 
         var points: [ChartPoint] = []
         for i in 0..<7 {
-            let date = calendar.date(byAdding: .day, value: i, to: monday)!
+            let date = calendar.date(byAdding: .day, value: i, to: targetMonday)!
             let matchingSnapshot = snapshots.first { snapshot in
                 calendar.isDate(snapshot.date, inSameDayAs: date)
             }
@@ -422,6 +452,31 @@ struct MetricDetailView: View {
     private var datesWithData: Set<Date> {
         let calendar = Calendar.current
         return Set(snapshots.map { calendar.startOfDay(for: $0.date) })
+    }
+
+    private var canGoBackWeek: Bool {
+        weekOffset > -3 // Up to 4 weeks back (30 days of data)
+    }
+
+    private var canGoForwardWeek: Bool {
+        weekOffset < 0
+    }
+
+    private var weekLabel: String {
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
+        let targetSunday = calendar.date(byAdding: .day, value: 6, to: targetMonday)!
+
+        if weekOffset == 0 { return "This Week" }
+        if weekOffset == -1 { return "Last Week" }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "\(formatter.string(from: targetMonday)) - \(formatter.string(from: targetSunday))"
     }
 
     private func valueForMetric(_ snapshot: DailySnapshot) -> Double {
