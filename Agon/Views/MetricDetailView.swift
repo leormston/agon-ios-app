@@ -118,19 +118,19 @@ struct MetricDetailView: View {
             Text(metricType.title)
                 .font(.title2.bold())
                 .foregroundStyle(Color.agonTextPrimary)
-            Text(periodTitle)
+            Text(weekLabel)
                 .font(.subheadline)
                 .foregroundStyle(Color.agonTextSecondary)
 
-            // Day-over-day trend
-            if let trend = dayOverDayTrend {
+            // Week-over-week comparison
+            if let comparison = weekOverWeekChange {
                 HStack(spacing: 4) {
-                    Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                    Image(systemName: comparison >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.caption)
-                    Text(String(format: "%+.1f%% vs yesterday", trend))
+                    Text(String(format: "%+.1f%% vs previous week", comparison))
                         .font(.caption.bold())
                 }
-                .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                .foregroundStyle(comparison >= 0 ? Color.agonAccent : Color.agonTextSecondary)
                 .padding(.top, 4)
             }
         }
@@ -577,13 +577,37 @@ struct MetricDetailView: View {
         dataPoints.min(by: { $0.value < $1.value })?.value ?? 0
     }
 
-    private var dayOverDayTrend: Double? {
-        let sorted = dataPoints.sorted { $0.date > $1.date }
-        guard sorted.count >= 2 else { return nil }
-        let today = sorted[0].value
-        let yesterday = sorted[1].value
-        guard yesterday > 0 else { return nil }
-        return ((today - yesterday) / yesterday) * 100
+    private var weekOverWeekChange: Double? {
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+
+        // Current selected week
+        let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
+        // Previous week
+        let prevMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset - 1, to: currentMonday)!
+
+        let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
+
+        let thisWeekTotal = totalForWeek(startingMonday: targetMonday, dataSource: dataSource)
+        let prevWeekTotal = totalForWeek(startingMonday: prevMonday, dataSource: dataSource)
+
+        guard prevWeekTotal > 0 else { return nil }
+        return ((thisWeekTotal - prevWeekTotal) / prevWeekTotal) * 100
+    }
+
+    private func totalForWeek(startingMonday: Date, dataSource: [DailySnapshot]) -> Double {
+        let calendar = Calendar.current
+        var total: Double = 0
+        for i in 0..<7 {
+            let date = calendar.date(byAdding: .day, value: i, to: startingMonday)!
+            if let snap = dataSource.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
+                total += valueForMetric(snap)
+            }
+        }
+        return total
     }
 
     private var currentStreak: Int {
