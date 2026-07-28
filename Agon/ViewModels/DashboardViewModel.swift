@@ -119,10 +119,39 @@ final class DashboardViewModel: ObservableObject {
     func trendForMetric(_ type: HealthMetricType) -> Double? {
         guard weekSnapshots.count >= 2 else { return nil }
         let sorted = weekSnapshots.sorted { $0.date > $1.date }
-        let today = valueFor(type, in: sorted[0])
-        let yesterday = valueFor(type, in: sorted[1])
-        guard yesterday > 0 else { return nil }
-        return ((today - yesterday) / yesterday) * 100
+
+        if selectedPeriod == .today {
+            // Compare today vs yesterday
+            let today = valueFor(type, in: sorted[0])
+            let yesterday = valueFor(type, in: sorted[1])
+            guard today > 0 && yesterday > 0 else { return nil }
+            return ((today - yesterday) / yesterday) * 100
+        } else {
+            // Compare this week's daily avg vs last week's daily avg
+            let calendar = Calendar.current
+            let now = Date.now
+            let weekday = calendar.component(.weekday, from: now)
+            let daysSinceMonday = (weekday + 5) % 7
+            let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: now)!
+            let lastMonday = calendar.date(byAdding: .day, value: -7, to: monday)!
+
+            let thisWeek = weekSnapshots.filter { calendar.startOfDay(for: $0.date) >= calendar.startOfDay(for: monday) }
+            let lastWeek = weekSnapshots.filter {
+                let day = calendar.startOfDay(for: $0.date)
+                return day >= calendar.startOfDay(for: lastMonday) && day < calendar.startOfDay(for: monday)
+            }
+
+            let thisWeekValues = thisWeek.map { valueFor(type, in: $0) }.filter { $0 > 0 }
+            let lastWeekValues = lastWeek.map { valueFor(type, in: $0) }.filter { $0 > 0 }
+
+            guard !thisWeekValues.isEmpty, !lastWeekValues.isEmpty else { return nil }
+
+            let thisAvg = thisWeekValues.reduce(0, +) / Double(thisWeekValues.count)
+            let lastAvg = lastWeekValues.reduce(0, +) / Double(lastWeekValues.count)
+
+            guard lastAvg > 0 else { return nil }
+            return ((thisAvg - lastAvg) / lastAvg) * 100
+        }
     }
 
     private func valueFor(_ type: HealthMetricType, in snapshot: DailySnapshot) -> Double {
