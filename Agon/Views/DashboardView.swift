@@ -25,9 +25,6 @@ struct DashboardView: View {
                     DashboardTab(title: "Today", isSelected: viewModel.selectedPeriod == .today) {
                         Task { await viewModel.selectPeriod(.today) }
                     }
-                    DashboardTab(title: "Last 7 Days", isSelected: viewModel.selectedPeriod == .last7Days) {
-                        Task { await viewModel.selectPeriod(.last7Days) }
-                    }
                     DashboardTab(title: "This Week", isSelected: viewModel.selectedPeriod == .thisWeek) {
                         Task { await viewModel.selectPeriod(.thisWeek) }
                     }
@@ -35,37 +32,6 @@ struct DashboardView: View {
                 .background(Color.agonSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal)
-
-                // Total / Average toggle (shown for Last 7 Days and This Week)
-                if viewModel.selectedPeriod != .today {
-                    HStack(spacing: 0) {
-                        Button {
-                            viewModel.aggregationMode = .total
-                        } label: {
-                            Text("Total")
-                                .font(.caption.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(viewModel.aggregationMode == .total ? Color.agonAccent : Color.clear)
-                                .foregroundStyle(viewModel.aggregationMode == .total ? .white : Color.agonTextSecondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        Button {
-                            viewModel.aggregationMode = .average
-                        } label: {
-                            Text("Average")
-                                .font(.caption.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(viewModel.aggregationMode == .average ? Color.agonAccent : Color.clear)
-                                .foregroundStyle(viewModel.aggregationMode == .average ? .white : Color.agonTextSecondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                    }
-                    .background(Color.agonSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .padding(.horizontal)
-                }
 
                 // Loading / Error / Metric Cards
                 if viewModel.isLoading && viewModel.snapshot == nil && viewModel.weekSnapshots.isEmpty {
@@ -85,9 +51,9 @@ struct DashboardView: View {
                     .padding(.horizontal)
                 } else {
                     // Aggregation label
-                    if viewModel.selectedPeriod == .thisWeek || viewModel.selectedPeriod == .last7Days {
+                    if viewModel.selectedPeriod == .thisWeek {
                         HStack {
-                            Text(viewModel.aggregationMode == .total ? "Totals" : "Daily Average")
+                            Text("Daily Average")
                                 .font(.caption)
                                 .foregroundStyle(Color.agonTextSecondary)
                             Spacer()
@@ -95,23 +61,36 @@ struct DashboardView: View {
                         .padding(.horizontal)
                     }
 
-                    // Metric Cards - 2 columns
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 16) {
-                        ForEach(viewModel.metrics) { metric in
-                            NavigationLink(destination: MetricDetailView(
-                                metricType: metric.type,
-                                snapshots: viewModel.snapshotsForChart,
-                                periodTitle: viewModel.periodTitle
-                            )) {
-                                MetricCard(metric: metric)
+                    // Metric Cards - 2 columns for Today, full-width mini charts for week views
+                    if viewModel.selectedPeriod == .today {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 16) {
+                            ForEach(viewModel.metrics) { metric in
+                                MetricCard(metric: metric, trend: viewModel.trendForMetric(metric.type))
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal)
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(viewModel.metrics) { metric in
+                                NavigationLink(destination: MetricDetailView(
+                                    metricType: metric.type,
+                                    snapshots: viewModel.snapshotsForChart,
+                                    periodTitle: viewModel.periodTitle
+                                )) {
+                                    MiniChartCard(
+                                        metric: metric,
+                                        snapshots: viewModel.snapshotsForChart,
+                                        trend: viewModel.trendForMetric(metric.type)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
 
                 // Sync Button
@@ -201,12 +180,25 @@ struct DashboardView: View {
 
 struct MetricCard: View {
     let metric: HealthMetric
+    var trend: Double? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: metric.type.icon)
-                .font(.title2)
-                .foregroundStyle(colorForMetric(metric.type))
+            HStack {
+                Image(systemName: metric.type.icon)
+                    .font(.title2)
+                    .foregroundStyle(colorForMetric(metric.type))
+                Spacer()
+                if let trend = trend {
+                    HStack(spacing: 2) {
+                        Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.system(size: 9))
+                        Text(String(format: "%+.0f%%", trend))
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -258,6 +250,154 @@ struct CircularProgressView: View {
                 .foregroundStyle(Color.agonTextPrimary)
         }
         .frame(width: 50, height: 50)
+    }
+}
+
+// MARK: - Mini Chart Card (full-width for week views)
+
+import Charts
+
+struct MiniChartCard: View {
+    let metric: HealthMetric
+    let snapshots: [DailySnapshot]
+    var trend: Double? = nil
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Left: info
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 5) {
+                    Image(systemName: metric.type.icon)
+                        .font(.subheadline)
+                        .foregroundStyle(colorForMetric(metric.type))
+                    Text(metric.type.title)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(metric.formattedValue)
+                        .font(.title3.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                    Text(metric.type.unit)
+                        .font(.caption)
+                        .foregroundStyle(Color.agonTextSecondary)
+                }
+            }
+            .frame(width: 110, alignment: .leading)
+
+            // Right: mini chart
+            Chart {
+                ForEach(chartData, id: \.date) { point in
+                    let hasData = hasDataDates.contains(Calendar.current.startOfDay(for: point.date))
+
+                    if hasData && point.value > 0 {
+                        LineMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", point.value)
+                        )
+                        .foregroundStyle(colorForMetric(metric.type))
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+
+                        AreaMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", point.value)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [colorForMetric(metric.type).opacity(0.2), colorForMetric(metric.type).opacity(0.0)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+
+                        PointMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", point.value)
+                        )
+                        .foregroundStyle(colorForMetric(metric.type))
+                        .symbolSize(20)
+                    } else {
+                        PointMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", 0)
+                        )
+                        .foregroundStyle(Color.agonBorder)
+                        .symbolSize(16)
+                    }
+                }
+            }
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .frame(height: 50)
+
+            // Right: trend
+            if let trend = trend {
+                VStack(spacing: 2) {
+                    Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 10))
+                    Text(String(format: "%+.0f%%", trend))
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                .frame(width: 35)
+            } else {
+                ProgressView()
+                    .scaleEffect(0.6)
+                    .frame(width: 35)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
+        .padding()
+        .background(Color.agonSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var chartData: [ChartPoint] {
+        // Always show Mon-Sun with grey dots for days without data
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+
+        var points: [ChartPoint] = []
+        for i in 0..<7 {
+            let date = calendar.date(byAdding: .day, value: i, to: monday)!
+            let matchingSnapshot = snapshots.first { snapshot in
+                calendar.isDate(snapshot.date, inSameDayAs: date)
+            }
+            let value = matchingSnapshot.map { valueForMetric($0) } ?? 0
+            points.append(ChartPoint(date: date, value: value))
+        }
+        return points
+    }
+
+    private var hasDataDates: Set<Date> {
+        let calendar = Calendar.current
+        return Set(snapshots.map { calendar.startOfDay(for: $0.date) })
+    }
+
+    private func valueForMetric(_ snapshot: DailySnapshot) -> Double {
+        switch metric.type {
+        case .steps: return snapshot.steps
+        case .distanceWalked: return snapshot.distanceWalked
+        case .distanceRan: return snapshot.distanceRan
+        case .totalSleep: return snapshot.totalSleep
+        case .timeInDaylight: return snapshot.timeInDaylight
+        case .exerciseMinutes: return snapshot.exerciseMinutes
+        }
+    }
+
+    private func colorForMetric(_ type: HealthMetricType) -> Color {
+        switch type {
+        case .steps: return Color.agonAccent
+        case .distanceWalked: return Color.agonSecondary
+        case .distanceRan: return Color.agonAccent
+        case .totalSleep: return Color.agonTextSecondary
+        case .timeInDaylight: return Color.yellow
+        case .exerciseMinutes: return Color.green
+        }
     }
 }
 

@@ -36,7 +36,6 @@ final class DashboardViewModel: ObservableObject {
     private let maxDailySyncs = 10
     private let syncCountKey = "agon_sync_count"
     private let syncDateKey = "agon_sync_date"
-    private let past7DaysSyncKey = "agon_past7_sync_date"
 
     var metrics: [HealthMetric] {
         switch selectedPeriod {
@@ -117,6 +116,55 @@ final class DashboardViewModel: ObservableObject {
         return weekSnapshots
     }
 
+    func trendForMetric(_ type: HealthMetricType) -> Double? {
+        guard weekSnapshots.count >= 2 else { return nil }
+        let sorted = weekSnapshots.sorted { $0.date > $1.date }
+
+        if selectedPeriod == .today {
+            // Compare today vs yesterday
+            let today = valueFor(type, in: sorted[0])
+            let yesterday = valueFor(type, in: sorted[1])
+            guard today > 0 && yesterday > 0 else { return nil }
+            return ((today - yesterday) / yesterday) * 100
+        } else {
+            // Compare this week's daily avg vs last week's daily avg
+            let calendar = Calendar.current
+            let now = Date.now
+            let weekday = calendar.component(.weekday, from: now)
+            let daysSinceMonday = (weekday + 5) % 7
+            let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: now)!
+            let lastMonday = calendar.date(byAdding: .day, value: -7, to: monday)!
+
+            let thisWeek = weekSnapshots.filter { calendar.startOfDay(for: $0.date) >= calendar.startOfDay(for: monday) }
+            let lastWeek = weekSnapshots.filter {
+                let day = calendar.startOfDay(for: $0.date)
+                return day >= calendar.startOfDay(for: lastMonday) && day < calendar.startOfDay(for: monday)
+            }
+
+            let thisWeekValues = thisWeek.map { valueFor(type, in: $0) }.filter { $0 > 0 }
+            let lastWeekValues = lastWeek.map { valueFor(type, in: $0) }.filter { $0 > 0 }
+
+            guard !thisWeekValues.isEmpty, !lastWeekValues.isEmpty else { return nil }
+
+            let thisAvg = thisWeekValues.reduce(0, +) / Double(thisWeekValues.count)
+            let lastAvg = lastWeekValues.reduce(0, +) / Double(lastWeekValues.count)
+
+            guard lastAvg > 0 else { return nil }
+            return ((thisAvg - lastAvg) / lastAvg) * 100
+        }
+    }
+
+    private func valueFor(_ type: HealthMetricType, in snapshot: DailySnapshot) -> Double {
+        switch type {
+        case .steps: return snapshot.steps
+        case .distanceWalked: return snapshot.distanceWalked
+        case .distanceRan: return snapshot.distanceRan
+        case .totalSleep: return snapshot.totalSleep
+        case .timeInDaylight: return snapshot.timeInDaylight
+        case .exerciseMinutes: return snapshot.exerciseMinutes
+        }
+    }
+
     func selectPeriod(_ period: DashboardPeriod) async {
         selectedPeriod = period
         aggregationMode = .total
@@ -134,6 +182,7 @@ final class DashboardViewModel: ObservableObject {
             await loadLast7Days()
         case .thisWeek:
             showWeekSummary = true
+            aggregationMode = .average
             await loadThisWeek()
         }
     }
@@ -156,7 +205,7 @@ final class DashboardViewModel: ObservableObject {
 
     private func loadWeekSnapshotsInBackground() async {
         var snapshots: [DailySnapshot] = []
-        for dayOffset in 0..<7 {
+        for dayOffset in 0..<30 {
             let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
             let snap = await healthService.fetchSnapshot(for: date)
             snapshots.append(snap)
@@ -168,11 +217,9 @@ final class DashboardViewModel: ObservableObject {
         isLoading = true
         let calendar = Calendar.current
         let today = Date.now
-        let weekday = calendar.component(.weekday, from: today)
-        // Monday = 2 in gregorian. Days since Monday:
-        let daysSinceMonday = (weekday + 5) % 7
+        // Load 14 days so we have this week + last week for trend calculation
         var snapshots: [DailySnapshot] = []
-        for dayOffset in 0...daysSinceMonday {
+        for dayOffset in 0..<14 {
             let date = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
             let snap = await healthService.fetchSnapshot(for: date)
             snapshots.append(snap)
@@ -196,7 +243,7 @@ final class DashboardViewModel: ObservableObject {
         if healthService.isAuthorized {
             await loadData()
             await loadWeekSnapshotsInBackground()
-            await syncPast7Days()
+            await syncPast30Days()
         } else if let error = healthService.authorizationError {
             errorMessage = error
             showPermissionAlert = true
@@ -279,17 +326,19 @@ final class DashboardViewModel: ObservableObject {
 
     // MARK: - 7-Day Sync
 
-    func syncPast7Days() async {
+    private let past30DaysSyncKey = "agon_past30_sync_date"
+
+    func syncPast30Days() async {
         // Only run once per day
         let today = Calendar.current.startOfDay(for: .now)
-        let lastSync = UserDefaults.standard.object(forKey: past7DaysSyncKey) as? Date ?? .distantPast
+        let lastSync = UserDefaults.standard.object(forKey: past30DaysSyncKey) as? Date ?? .distantPast
         let lastSyncDay = Calendar.current.startOfDay(for: lastSync)
         guard lastSyncDay < today else { return }
 
         var days: [[String: Any]] = []
         let calendar = Calendar.current
 
-        for offset in 0..<7 {
+        for offset in 0..<30 {
             guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
             let snap = await healthService.fetchSnapshot(for: date)
 
@@ -310,10 +359,10 @@ final class DashboardViewModel: ObservableObject {
 
         do {
             try await apiService.syncMultipleDays(days: days)
-            UserDefaults.standard.set(Date(), forKey: past7DaysSyncKey)
-            print("Past 7 days synced to backend")
+            UserDefaults.standard.set(Date(), forKey: past30DaysSyncKey)
+            print("Past 30 days synced to backend")
         } catch {
-            print("Past 7 days sync failed: \(error)")
+            print("Past 30 days sync failed: \(error)")
         }
     }
 

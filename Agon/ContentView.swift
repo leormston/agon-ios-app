@@ -16,14 +16,20 @@ struct ContentView: View {
                             Label("Dashboard", systemImage: "heart.text.square")
                         }
 
-                    ChallengesView()
+                    FeedComingSoonView()
                         .tag(1)
+                        .tabItem {
+                            Label("Feed", systemImage: "text.bubble")
+                        }
+
+                    ChallengesView()
+                        .tag(2)
                         .tabItem {
                             Label("Challenges", systemImage: "trophy")
                         }
 
                     CommunityView()
-                        .tag(2)
+                        .tag(3)
                         .tabItem {
                             Label("Friends", systemImage: "person.2")
                         }

@@ -10,6 +10,9 @@ struct MetricDetailView: View {
     @State private var showBarChart = false
     @State private var showFriendOverlay = false
     @State private var animateChart = false
+    @State private var weekOffset: Int = 0
+    @State private var allSnapshots: [DailySnapshot] = []
+    @State private var isLoadingWeeks = false
 
     @AppStorage("goal_steps") private var stepsGoal: Double = 10_000
     @AppStorage("goal_exerciseMinutes") private var exerciseGoal: Double = 30
@@ -46,6 +49,63 @@ struct MetricDetailView: View {
                 animateChart = true
             }
         }
+        .task {
+            await loadAllSnapshots()
+        }
+    }
+
+    private func loadAllSnapshots() async {
+        isLoadingWeeks = true
+        let healthService = HealthKitService.shared
+        let calendar = Calendar.current
+
+        // Load from HealthKit (local device data)
+        var healthKitSnapshots: [DailySnapshot] = []
+        for dayOffset in 0..<30 {
+            let date = calendar.date(byAdding: .day, value: -dayOffset, to: .now)!
+            let snap = await healthService.fetchSnapshot(for: date)
+            healthKitSnapshots.append(snap)
+        }
+
+        // Load from backend (data from any source - Strava, Garmin, etc)
+        var backendSnapshots: [DailySnapshot] = []
+        if let rawSnapshots = try? await APIService.shared.getMySnapshots(days: 30) {
+            for raw in rawSnapshots {
+                if let dateStr = raw["date"] as? String,
+                   let metrics = raw["metrics"] as? [String: Any] {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    if let date = formatter.date(from: dateStr) {
+                        let snap = DailySnapshot(
+                            date: date,
+                            steps: (metrics["steps"] as? Double) ?? 0,
+                            distanceWalked: (metrics["distanceWalked"] as? Double) ?? 0,
+                            distanceRan: (metrics["distanceRan"] as? Double) ?? 0,
+                            totalSleep: (metrics["totalSleep"] as? Double) ?? 0,
+                            timeInDaylight: (metrics["timeInDaylight"] as? Double) ?? 0,
+                            exerciseMinutes: (metrics["exerciseMinutes"] as? Double) ?? 0
+                        )
+                        backendSnapshots.append(snap)
+                    }
+                }
+            }
+        }
+
+        // Merge: prefer HealthKit data for days that have it, use backend for others
+        var merged: [Date: DailySnapshot] = [:]
+        for snap in backendSnapshots {
+            merged[calendar.startOfDay(for: snap.date)] = snap
+        }
+        for snap in healthKitSnapshots {
+            let day = calendar.startOfDay(for: snap.date)
+            // HealthKit overwrites backend if it has non-zero data
+            if snap.steps > 0 || snap.exerciseMinutes > 0 || snap.distanceWalked > 0 {
+                merged[day] = snap
+            }
+        }
+
+        allSnapshots = Array(merged.values)
+        isLoadingWeeks = false
     }
 
     // MARK: - Header
@@ -58,19 +118,19 @@ struct MetricDetailView: View {
             Text(metricType.title)
                 .font(.title2.bold())
                 .foregroundStyle(Color.agonTextPrimary)
-            Text(periodTitle)
+            Text(weekLabel)
                 .font(.subheadline)
                 .foregroundStyle(Color.agonTextSecondary)
 
-            // Day-over-day trend
-            if let trend = dayOverDayTrend {
+            // Week-over-week comparison
+            if let comparison = weekOverWeekChange {
                 HStack(spacing: 4) {
-                    Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                    Image(systemName: comparison >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.caption)
-                    Text(String(format: "%+.1f%% vs yesterday", trend))
+                    Text(String(format: "%+.1f%% vs previous week", comparison))
                         .font(.caption.bold())
                 }
-                .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                .foregroundStyle(comparison >= 0 ? Color.agonAccent : Color.agonTextSecondary)
                 .padding(.top, 4)
             }
         }
@@ -121,27 +181,62 @@ struct MetricDetailView: View {
 
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Week navigation
             HStack {
-                Text("Daily Breakdown")
-                    .font(.headline)
-                    .foregroundStyle(Color.agonTextPrimary)
+                Button {
+                    withAnimation {
+                        weekOffset -= 1
+                        selectedPoint = nil
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .foregroundStyle(canGoBackWeek ? Color.agonAccent : Color.agonBorder)
+                }
+                .disabled(!canGoBackWeek)
+
                 Spacer()
 
-                // Selected point tooltip
-                if let point = selectedPoint {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(formatValue(point.value))
-                            .font(.caption.bold())
-                            .foregroundStyle(Color.agonAccent)
-                        Text(shortDateLabel(point.date))
-                            .font(.caption2)
-                            .foregroundStyle(Color.agonTextSecondary)
+                Text(weekLabel)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Color.agonTextPrimary)
+
+                Spacer()
+
+                Button {
+                    withAnimation {
+                        weekOffset += 1
+                        selectedPoint = nil
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.agonBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                        .foregroundStyle(canGoForwardWeek ? Color.agonAccent : Color.agonBorder)
                 }
+                .disabled(!canGoForwardWeek)
+            }
+
+            // Goal and Average info
+            HStack(spacing: 16) {
+                HStack(spacing: 4) {
+                    Rectangle()
+                        .stroke(Color.agonSecondary, style: StrokeStyle(lineWidth: 2, dash: [4, 2]))
+                        .frame(width: 14, height: 2)
+                    Text("Avg: \(formatValue(average))")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonSecondary)
+                }
+                if let goal = goalForMetric {
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .stroke(Color.agonAccent, style: StrokeStyle(lineWidth: 2, dash: [6, 3]))
+                            .frame(width: 14, height: 2)
+                        Text("Goal: \(formatValue(goal))")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonAccent)
+                    }
+                }
+                Spacer()
             }
 
             if chartData.isEmpty {
@@ -162,22 +257,12 @@ struct MetricDetailView: View {
                     RuleMark(y: .value("Average", average))
                         .foregroundStyle(Color.agonSecondary.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
-                        .annotation(position: .top, alignment: .leading) {
-                            Text("Avg")
-                                .font(.caption2)
-                                .foregroundStyle(Color.agonSecondary)
-                        }
 
                     // Goal line (if applicable)
                     if let goal = goalForMetric {
                         RuleMark(y: .value("Goal", goal))
                             .foregroundStyle(Color.agonAccent.opacity(0.5))
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
-                            .annotation(position: .top, alignment: .trailing) {
-                                Text("Goal")
-                                    .font(.caption2)
-                                    .foregroundStyle(Color.agonAccent)
-                            }
                     }
                 }
                 .chartXAxis {
@@ -208,9 +293,28 @@ struct MetricDetailView: View {
                                         }
                                     }
                                     .onEnded { _ in
-                                        // Keep selection visible
                                     }
                             )
+                            .overlay {
+                                if let point = selectedPoint,
+                                   let xPos = proxy.position(forX: point.date),
+                                   let yPos = proxy.position(forY: point.value) {
+                                    VStack(spacing: 2) {
+                                        Text(formatValue(point.value))
+                                            .font(.caption.bold())
+                                            .foregroundStyle(Color.agonAccent)
+                                        Text(shortDateLabel(point.date))
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(Color.agonTextSecondary)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.agonSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
+                                    .position(x: xPos, y: yPos - 30)
+                                }
+                            }
                     }
                 }
                 .frame(height: 240)
@@ -239,37 +343,47 @@ struct MetricDetailView: View {
     @ChartContentBuilder
     private var lineChartContent: some ChartContent {
         ForEach(chartData, id: \.date) { point in
-            LineMark(
-                x: .value("Day", point.date, unit: .day),
-                y: .value(metricType.title, point.value)
-            )
-            .foregroundStyle(Color.agonAccent)
-            .lineStyle(StrokeStyle(lineWidth: 2.5))
-            .interpolationMethod(.catmullRom)
+            let hasData = datesWithData.contains(Calendar.current.startOfDay(for: point.date)) && point.value > 0
 
-            AreaMark(
-                x: .value("Day", point.date, unit: .day),
-                y: .value(metricType.title, point.value)
-            )
-            .foregroundStyle(
-                LinearGradient(
-                    colors: [Color.agonAccent.opacity(0.2), Color.agonAccent.opacity(0.0)],
-                    startPoint: .top,
-                    endPoint: .bottom
+            if hasData {
+                LineMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value(metricType.title, point.value)
                 )
-            )
-            .interpolationMethod(.catmullRom)
+                .foregroundStyle(Color.agonAccent)
+                .lineStyle(StrokeStyle(lineWidth: 2.5))
 
-            // Colour-coded points - green above avg, grey below
-            PointMark(
-                x: .value("Day", point.date, unit: .day),
-                y: .value(metricType.title, point.value)
-            )
-            .foregroundStyle(point.value >= average ? Color.green : Color.agonTextSecondary)
-            .symbolSize(selectedPoint?.date == point.date ? 80 : 40)
+                AreaMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value(metricType.title, point.value)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.agonAccent.opacity(0.2), Color.agonAccent.opacity(0.0)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
-            // Min/max annotations
-            if point.value == best {
+                // Colour-coded points - green above avg, grey below
+                PointMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value(metricType.title, point.value)
+                )
+                .foregroundStyle(point.value >= average ? Color.green : Color.agonTextSecondary)
+                .symbolSize(selectedPoint?.date == point.date ? 80 : 40)
+            } else {
+                // Grey dot for days without data
+                PointMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value(metricType.title, 0)
+                )
+                .foregroundStyle(Color.agonBorder)
+                .symbolSize(24)
+            }
+
+            // Min/max annotations (only on real data points)
+            if hasData && point.value == best && dataPoints.count > 1 {
                 PointMark(
                     x: .value("Day", point.date, unit: .day),
                     y: .value(metricType.title, point.value)
@@ -283,7 +397,7 @@ struct MetricDetailView: View {
                 .symbolSize(0)
             }
 
-            if point.value == worst && chartData.count > 1 {
+            if hasData && point.value == worst && dataPoints.count > 1 {
                 PointMark(
                     x: .value("Day", point.date, unit: .day),
                     y: .value(metricType.title, point.value)
@@ -374,11 +488,56 @@ struct MetricDetailView: View {
     // MARK: - Chart Data
 
     private var chartData: [ChartPoint] {
-        snapshots
-            .sorted { $0.date < $1.date }
-            .map { snapshot in
-                ChartPoint(date: snapshot.date, value: valueForMetric(snapshot))
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
+
+        let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
+
+        var points: [ChartPoint] = []
+        for i in 0..<7 {
+            let date = calendar.date(byAdding: .day, value: i, to: targetMonday)!
+            let matchingSnapshot = dataSource.first { snapshot in
+                calendar.isDate(snapshot.date, inSameDayAs: date)
             }
+            let value = matchingSnapshot.map { valueForMetric($0) } ?? 0
+            points.append(ChartPoint(date: date, value: value))
+        }
+        return points
+    }
+
+    private var datesWithData: Set<Date> {
+        let calendar = Calendar.current
+        let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
+        return Set(dataSource.map { calendar.startOfDay(for: $0.date) })
+    }
+
+    private var canGoBackWeek: Bool {
+        weekOffset > -3 // Up to 4 weeks back (30 days of data)
+    }
+
+    private var canGoForwardWeek: Bool {
+        weekOffset < 0
+    }
+
+    private var weekLabel: String {
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
+        let targetSunday = calendar.date(byAdding: .day, value: 6, to: targetMonday)!
+
+        if weekOffset == 0 { return "This Week" }
+        if weekOffset == -1 { return "Last Week" }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "\(formatter.string(from: targetMonday)) - \(formatter.string(from: targetSunday))"
     }
 
     private func valueForMetric(_ snapshot: DailySnapshot) -> Double {
@@ -394,34 +553,71 @@ struct MetricDetailView: View {
 
     // MARK: - Computed Values
 
+    // Only points that have real data (not grey placeholder dots)
+    private var dataPoints: [ChartPoint] {
+        chartData.filter { point in
+            datesWithData.contains(Calendar.current.startOfDay(for: point.date)) && point.value > 0
+        }
+    }
+
     private var total: Double {
-        chartData.reduce(0) { $0 + $1.value }
+        dataPoints.reduce(0) { $0 + $1.value }
     }
 
     private var average: Double {
-        guard !chartData.isEmpty else { return 0 }
-        return total / Double(chartData.count)
+        guard !dataPoints.isEmpty else { return 0 }
+        return total / Double(dataPoints.count)
     }
 
     private var best: Double {
-        chartData.max(by: { $0.value < $1.value })?.value ?? 0
+        dataPoints.max(by: { $0.value < $1.value })?.value ?? 0
     }
 
     private var worst: Double {
-        chartData.min(by: { $0.value < $1.value })?.value ?? 0
+        dataPoints.min(by: { $0.value < $1.value })?.value ?? 0
     }
 
-    private var dayOverDayTrend: Double? {
-        let sorted = chartData.sorted { $0.date > $1.date }
-        guard sorted.count >= 2 else { return nil }
-        let today = sorted[0].value
-        let yesterday = sorted[1].value
-        guard yesterday > 0 else { return nil }
-        return ((today - yesterday) / yesterday) * 100
+    private var weekOverWeekChange: Double? {
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+
+        // Current selected week
+        let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
+        // Previous week
+        let prevMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset - 1, to: currentMonday)!
+
+        let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
+
+        let thisWeekAvg = averageForWeek(startingMonday: targetMonday, dataSource: dataSource)
+        let prevWeekAvg = averageForWeek(startingMonday: prevMonday, dataSource: dataSource)
+
+        guard prevWeekAvg > 0 else { return nil }
+        return ((thisWeekAvg - prevWeekAvg) / prevWeekAvg) * 100
+    }
+
+    private func averageForWeek(startingMonday: Date, dataSource: [DailySnapshot]) -> Double {
+        let calendar = Calendar.current
+        var total: Double = 0
+        var daysWithData: Int = 0
+        for i in 0..<7 {
+            let date = calendar.date(byAdding: .day, value: i, to: startingMonday)!
+            if let snap = dataSource.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
+                let value = valueForMetric(snap)
+                if value > 0 {
+                    total += value
+                    daysWithData += 1
+                }
+            }
+        }
+        guard daysWithData > 0 else { return 0 }
+        return total / Double(daysWithData)
     }
 
     private var currentStreak: Int {
-        let sorted = chartData.sorted { $0.date > $1.date }
+        let sorted = dataPoints.sorted { $0.date > $1.date }
         var streak = 0
         for point in sorted {
             if point.value >= average {
