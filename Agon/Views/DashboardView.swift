@@ -341,6 +341,10 @@ struct MiniChartCard: View {
                 }
                 .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
                 .frame(width: 35)
+            } else {
+                ProgressView()
+                    .scaleEffect(0.6)
+                    .frame(width: 35)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)

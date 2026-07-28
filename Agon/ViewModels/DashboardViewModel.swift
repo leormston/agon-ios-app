@@ -217,11 +217,9 @@ final class DashboardViewModel: ObservableObject {
         isLoading = true
         let calendar = Calendar.current
         let today = Date.now
-        let weekday = calendar.component(.weekday, from: today)
-        // Monday = 2 in gregorian. Days since Monday:
-        let daysSinceMonday = (weekday + 5) % 7
+        // Load 14 days so we have this week + last week for trend calculation
         var snapshots: [DailySnapshot] = []
-        for dayOffset in 0...daysSinceMonday {
+        for dayOffset in 0..<14 {
             let date = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
             let snap = await healthService.fetchSnapshot(for: date)
             snapshots.append(snap)
