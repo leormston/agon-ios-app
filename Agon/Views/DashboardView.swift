@@ -264,38 +264,27 @@ struct MiniChartCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Left: info stack
-            VStack(alignment: .leading, spacing: 4) {
-                // Icon + Title + Unit
+            // Left: info
+            VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 5) {
                     Image(systemName: metric.type.icon)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(colorForMetric(metric.type))
                     Text(metric.type.title)
-                        .font(.caption.bold())
+                        .font(.subheadline.bold())
                         .foregroundStyle(Color.agonTextPrimary)
-                    Text("(\(metric.type.unit))")
-                        .font(.caption2)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(metric.formattedValue)
+                        .font(.title3.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                    Text(metric.type.unit)
+                        .font(.caption)
                         .foregroundStyle(Color.agonTextSecondary)
                 }
-
-                // Value
-                Text(metric.formattedValue)
-                    .font(.title3.bold())
-                    .foregroundStyle(Color.agonTextPrimary)
-
-                // Trend
-                if let trend = trend {
-                    HStack(spacing: 2) {
-                        Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
-                            .font(.system(size: 9))
-                        Text(String(format: "%+.0f%%", trend))
-                            .font(.caption.bold())
-                    }
-                    .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
-                }
             }
-            .frame(width: 100, alignment: .leading)
+            .frame(width: 110, alignment: .leading)
 
             // Right: mini chart
             Chart {
