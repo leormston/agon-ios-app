@@ -264,32 +264,30 @@ struct MiniChartCard: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            HStack(spacing: 12) {
-                // Left: icon + value
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Top: icon + title
+                HStack(spacing: 6) {
                     Image(systemName: metric.type.icon)
-                        .font(.title3)
+                        .font(.subheadline)
                         .foregroundStyle(colorForMetric(metric.type))
-
+                    Text(metric.type.title)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                    Spacer()
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(metric.formattedValue)
-                            .font(.headline.bold())
+                            .font(.subheadline.bold())
                             .foregroundStyle(Color.agonTextPrimary)
                         Text(metric.type.unit)
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(Color.agonTextSecondary)
                     }
-
-                    Text(metric.type.title)
-                        .font(.caption)
-                        .foregroundStyle(Color.agonTextSecondary)
                 }
-                .frame(width: 80, alignment: .leading)
 
-            // Right: mini line chart
-            Chart {
-                ForEach(chartData, id: \.date) { point in
-                    let hasData = hasDataDates.contains(Calendar.current.startOfDay(for: point.date))
+                // Chart
+                Chart {
+                    ForEach(chartData, id: \.date) { point in
+                        let hasData = hasDataDates.contains(Calendar.current.startOfDay(for: point.date))
 
                     if hasData && point.value > 0 {
                         LineMark(
@@ -330,7 +328,7 @@ struct MiniChartCard: View {
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .frame(height: 50)
-        }
+            }
 
             // Trend badge top-right
             if let trend = trend {
