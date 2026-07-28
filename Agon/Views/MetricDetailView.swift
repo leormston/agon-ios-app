@@ -126,22 +126,6 @@ struct MetricDetailView: View {
                     .font(.headline)
                     .foregroundStyle(Color.agonTextPrimary)
                 Spacer()
-
-                // Selected point tooltip
-                if let point = selectedPoint {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(formatValue(point.value))
-                            .font(.caption.bold())
-                            .foregroundStyle(Color.agonAccent)
-                        Text(shortDateLabel(point.date))
-                            .font(.caption2)
-                            .foregroundStyle(Color.agonTextSecondary)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.agonBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
             }
 
             if chartData.isEmpty {
@@ -245,7 +229,6 @@ struct MetricDetailView: View {
             )
             .foregroundStyle(Color.agonAccent)
             .lineStyle(StrokeStyle(lineWidth: 2.5))
-            .interpolationMethod(.catmullRom)
 
             AreaMark(
                 x: .value("Day", point.date, unit: .day),
@@ -258,7 +241,6 @@ struct MetricDetailView: View {
                     endPoint: .bottom
                 )
             )
-            .interpolationMethod(.catmullRom)
 
             // Colour-coded points - green above avg, grey below
             PointMark(
@@ -267,6 +249,23 @@ struct MetricDetailView: View {
             )
             .foregroundStyle(point.value >= average ? Color.green : Color.agonTextSecondary)
             .symbolSize(selectedPoint?.date == point.date ? 80 : 40)
+            .annotation(position: .top, spacing: 8) {
+                if selectedPoint?.date == point.date {
+                    VStack(spacing: 2) {
+                        Text(formatValue(point.value))
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.agonAccent)
+                        Text(shortDateLabel(point.date))
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
+                }
+            }
 
             // Min/max annotations
             if point.value == best {
