@@ -82,7 +82,8 @@ struct DashboardView: View {
                                 )) {
                                     MiniChartCard(
                                         metric: metric,
-                                        snapshots: viewModel.snapshotsForChart
+                                        snapshots: viewModel.snapshotsForChart,
+                                        trend: viewModel.trendForMetric(metric.type)
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -259,14 +260,27 @@ import Charts
 struct MiniChartCard: View {
     let metric: HealthMetric
     let snapshots: [DailySnapshot]
+    var trend: Double? = nil
 
     var body: some View {
         HStack(spacing: 12) {
             // Left: icon + value
             VStack(alignment: .leading, spacing: 4) {
-                Image(systemName: metric.type.icon)
-                    .font(.title3)
-                    .foregroundStyle(colorForMetric(metric.type))
+                HStack {
+                    Image(systemName: metric.type.icon)
+                        .font(.title3)
+                        .foregroundStyle(colorForMetric(metric.type))
+                    Spacer()
+                    if let trend = trend {
+                        HStack(spacing: 2) {
+                            Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                .font(.system(size: 9))
+                            Text(String(format: "%+.0f%%", trend))
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                    }
+                }
 
                 Text(metric.formattedValue)
                     .font(.headline.bold())
@@ -276,7 +290,7 @@ struct MiniChartCard: View {
                     .font(.caption)
                     .foregroundStyle(Color.agonTextSecondary)
             }
-            .frame(width: 80, alignment: .leading)
+            .frame(width: 90, alignment: .leading)
 
             // Right: mini line chart
             Chart {
@@ -323,7 +337,7 @@ struct MiniChartCard: View {
             .chartYAxis(.hidden)
             .frame(height: 50)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
         .padding()
         .background(Color.agonSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
