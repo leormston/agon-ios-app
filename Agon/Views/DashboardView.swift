@@ -25,11 +25,11 @@ struct DashboardView: View {
                     DashboardTab(title: "Today", isSelected: viewModel.selectedPeriod == .today) {
                         Task { await viewModel.selectPeriod(.today) }
                     }
-                    DashboardTab(title: "Last 7 Days", isSelected: viewModel.selectedPeriod == .last7Days) {
-                        Task { await viewModel.selectPeriod(.last7Days) }
-                    }
                     DashboardTab(title: "This Week", isSelected: viewModel.selectedPeriod == .thisWeek) {
                         Task { await viewModel.selectPeriod(.thisWeek) }
+                    }
+                    DashboardTab(title: "Last 7 Days", isSelected: viewModel.selectedPeriod == .last7Days) {
+                        Task { await viewModel.selectPeriod(.last7Days) }
                     }
                 }
                 .background(Color.agonSurface)
