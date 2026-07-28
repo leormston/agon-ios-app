@@ -82,7 +82,7 @@ struct DashboardView: View {
                     .padding(.horizontal)
                 } else {
                     // Aggregation label
-                    if viewModel.selectedPeriod == .thisWeek || viewModel.selectedPeriod == .last7Days {
+                    if viewModel.selectedPeriod == .thisWeek {
                         HStack {
                             Text(viewModel.aggregationMode == .total ? "Totals" : "Daily Average")
                                 .font(.caption)
@@ -306,24 +306,42 @@ struct MiniChartCard: View {
             // Right: mini line chart
             Chart {
                 ForEach(chartData, id: \.date) { point in
-                    LineMark(
-                        x: .value("Day", point.date, unit: .day),
-                        y: .value("Value", point.value)
-                    )
-                    .foregroundStyle(colorForMetric(metric.type))
-                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    let hasData = hasDataDates.contains(Calendar.current.startOfDay(for: point.date))
 
-                    AreaMark(
-                        x: .value("Day", point.date, unit: .day),
-                        y: .value("Value", point.value)
-                    )
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [colorForMetric(metric.type).opacity(0.2), colorForMetric(metric.type).opacity(0.0)],
-                            startPoint: .top,
-                            endPoint: .bottom
+                    if hasData && point.value > 0 {
+                        LineMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", point.value)
                         )
-                    )
+                        .foregroundStyle(colorForMetric(metric.type))
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+
+                        AreaMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", point.value)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [colorForMetric(metric.type).opacity(0.2), colorForMetric(metric.type).opacity(0.0)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+
+                        PointMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", point.value)
+                        )
+                        .foregroundStyle(colorForMetric(metric.type))
+                        .symbolSize(20)
+                    } else {
+                        PointMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Value", 0)
+                        )
+                        .foregroundStyle(Color.agonBorder)
+                        .symbolSize(16)
+                    }
                 }
             }
             .chartXAxis(.hidden)
@@ -337,11 +355,28 @@ struct MiniChartCard: View {
     }
 
     private var chartData: [ChartPoint] {
-        snapshots
-            .sorted { $0.date < $1.date }
-            .map { snapshot in
-                ChartPoint(date: snapshot.date, value: valueForMetric(snapshot))
+        // Always show Mon-Sun with grey dots for days without data
+        let calendar = Calendar.current
+        let today = Date.now
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+
+        var points: [ChartPoint] = []
+        for i in 0..<7 {
+            let date = calendar.date(byAdding: .day, value: i, to: monday)!
+            let matchingSnapshot = snapshots.first { snapshot in
+                calendar.isDate(snapshot.date, inSameDayAs: date)
             }
+            let value = matchingSnapshot.map { valueForMetric($0) } ?? 0
+            points.append(ChartPoint(date: date, value: value))
+        }
+        return points
+    }
+
+    private var hasDataDates: Set<Date> {
+        let calendar = Calendar.current
+        return Set(snapshots.map { calendar.startOfDay(for: $0.date) })
     }
 
     private func valueForMetric(_ snapshot: DailySnapshot) -> Double {
