@@ -40,6 +40,7 @@
 		E51000031 /* FriendProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000033 /* FriendProfileView.swift */; };
 		E51000032 /* MetricDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000034 /* MetricDetailView.swift */; };
 		E51000033 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000035 /* GoalsView.swift */; };
+		E51000034 /* FeedComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000036 /* FeedComingSoonView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -78,6 +79,7 @@
 		E52000033 /* FriendProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendProfileView.swift; sourceTree = "<group>"; };
 		E52000034 /* MetricDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricDetailView.swift; sourceTree = "<group>"; };
 		E52000035 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
+		E52000036 /* FeedComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedComingSoonView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -132,6 +134,7 @@
 				E52000033 /* FriendProfileView.swift */,
 				E52000034 /* MetricDetailView.swift */,
 				E52000035 /* GoalsView.swift */,
+				E52000036 /* FeedComingSoonView.swift */,
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
@@ -310,6 +313,7 @@
 				E51000031 /* FriendProfileView.swift in Sources */,
 				E51000032 /* MetricDetailView.swift in Sources */,
 				E51000033 /* GoalsView.swift in Sources */,
+				E51000034 /* FeedComingSoonView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
