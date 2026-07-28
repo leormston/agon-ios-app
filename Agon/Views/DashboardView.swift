@@ -330,6 +330,18 @@ struct MiniChartCard: View {
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .frame(height: 50)
+
+            // Right: trend
+            if let trend = trend {
+                VStack(spacing: 2) {
+                    Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 10))
+                    Text(String(format: "%+.0f%%", trend))
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                .frame(width: 35)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
         .padding()
