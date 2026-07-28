@@ -10,7 +10,9 @@ struct MetricDetailView: View {
     @State private var showBarChart = false
     @State private var showFriendOverlay = false
     @State private var animateChart = false
-    @State private var weekOffset: Int = 0 // 0 = current week, -1 = last week, etc.
+    @State private var weekOffset: Int = 0
+    @State private var allSnapshots: [DailySnapshot] = []
+    @State private var isLoadingWeeks = false
 
     @AppStorage("goal_steps") private var stepsGoal: Double = 10_000
     @AppStorage("goal_exerciseMinutes") private var exerciseGoal: Double = 30
@@ -47,6 +49,22 @@ struct MetricDetailView: View {
                 animateChart = true
             }
         }
+        .task {
+            await loadAllSnapshots()
+        }
+    }
+
+    private func loadAllSnapshots() async {
+        isLoadingWeeks = true
+        let healthService = HealthKitService.shared
+        var loaded: [DailySnapshot] = []
+        for dayOffset in 0..<30 {
+            let date = Calendar.current.date(byAdding: .day, value: -dayOffset, to: .now)!
+            let snap = await healthService.fetchSnapshot(for: date)
+            loaded.append(snap)
+        }
+        allSnapshots = loaded
+        isLoadingWeeks = false
     }
 
     // MARK: - Header
@@ -429,7 +447,6 @@ struct MetricDetailView: View {
     // MARK: - Chart Data
 
     private var chartData: [ChartPoint] {
-        // Show the week based on weekOffset (0 = current, -1 = last week, etc)
         let calendar = Calendar.current
         let today = Date.now
         let weekday = calendar.component(.weekday, from: today)
@@ -437,10 +454,12 @@ struct MetricDetailView: View {
         let currentMonday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
         let targetMonday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentMonday)!
 
+        let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
+
         var points: [ChartPoint] = []
         for i in 0..<7 {
             let date = calendar.date(byAdding: .day, value: i, to: targetMonday)!
-            let matchingSnapshot = snapshots.first { snapshot in
+            let matchingSnapshot = dataSource.first { snapshot in
                 calendar.isDate(snapshot.date, inSameDayAs: date)
             }
             let value = matchingSnapshot.map { valueForMetric($0) } ?? 0
@@ -451,7 +470,8 @@ struct MetricDetailView: View {
 
     private var datesWithData: Set<Date> {
         let calendar = Calendar.current
-        return Set(snapshots.map { calendar.startOfDay(for: $0.date) })
+        let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
+        return Set(dataSource.map { calendar.startOfDay(for: $0.date) })
     }
 
     private var canGoBackWeek: Bool {
