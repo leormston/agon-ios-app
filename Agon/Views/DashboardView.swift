@@ -271,9 +271,14 @@ struct MiniChartCard: View {
                         .font(.title3)
                         .foregroundStyle(colorForMetric(metric.type))
 
-                    Text(metric.formattedValue)
-                        .font(.headline.bold())
-                        .foregroundStyle(Color.agonTextPrimary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(metric.formattedValue)
+                            .font(.headline.bold())
+                            .foregroundStyle(Color.agonTextPrimary)
+                        Text(metric.type.unit)
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
 
                     Text(metric.type.title)
                         .font(.caption)
