@@ -116,6 +116,26 @@ final class DashboardViewModel: ObservableObject {
         return weekSnapshots
     }
 
+    func trendForMetric(_ type: HealthMetricType) -> Double? {
+        guard weekSnapshots.count >= 2 else { return nil }
+        let sorted = weekSnapshots.sorted { $0.date > $1.date }
+        let today = valueFor(type, in: sorted[0])
+        let yesterday = valueFor(type, in: sorted[1])
+        guard yesterday > 0 else { return nil }
+        return ((today - yesterday) / yesterday) * 100
+    }
+
+    private func valueFor(_ type: HealthMetricType, in snapshot: DailySnapshot) -> Double {
+        switch type {
+        case .steps: return snapshot.steps
+        case .distanceWalked: return snapshot.distanceWalked
+        case .distanceRan: return snapshot.distanceRan
+        case .totalSleep: return snapshot.totalSleep
+        case .timeInDaylight: return snapshot.timeInDaylight
+        case .exerciseMinutes: return snapshot.exerciseMinutes
+        }
+    }
+
     func selectPeriod(_ period: DashboardPeriod) async {
         selectedPeriod = period
         aggregationMode = .total

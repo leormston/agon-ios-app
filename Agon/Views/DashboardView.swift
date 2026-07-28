@@ -68,14 +68,7 @@ struct DashboardView: View {
                             GridItem(.flexible())
                         ], spacing: 16) {
                             ForEach(viewModel.metrics) { metric in
-                                NavigationLink(destination: MetricDetailView(
-                                    metricType: metric.type,
-                                    snapshots: viewModel.snapshotsForChart,
-                                    periodTitle: viewModel.periodTitle
-                                )) {
-                                    MetricCard(metric: metric)
-                                }
-                                .buttonStyle(.plain)
+                                MetricCard(metric: metric, trend: viewModel.trendForMetric(metric.type))
                             }
                         }
                         .padding(.horizontal)
@@ -186,12 +179,25 @@ struct DashboardView: View {
 
 struct MetricCard: View {
     let metric: HealthMetric
+    var trend: Double? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: metric.type.icon)
-                .font(.title2)
-                .foregroundStyle(colorForMetric(metric.type))
+            HStack {
+                Image(systemName: metric.type.icon)
+                    .font(.title2)
+                    .foregroundStyle(colorForMetric(metric.type))
+                Spacer()
+                if let trend = trend {
+                    HStack(spacing: 2) {
+                        Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.system(size: 9))
+                        Text(String(format: "%+.0f%%", trend))
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
