@@ -134,6 +134,7 @@ final class DashboardViewModel: ObservableObject {
             await loadLast7Days()
         case .thisWeek:
             showWeekSummary = true
+            aggregationMode = .average
             await loadThisWeek()
         }
     }

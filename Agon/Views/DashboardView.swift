@@ -33,37 +33,6 @@ struct DashboardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal)
 
-                // Total / Average toggle (shown for Last 7 Days and This Week)
-                if viewModel.selectedPeriod != .today {
-                    HStack(spacing: 0) {
-                        Button {
-                            viewModel.aggregationMode = .total
-                        } label: {
-                            Text("Total")
-                                .font(.caption.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(viewModel.aggregationMode == .total ? Color.agonAccent : Color.clear)
-                                .foregroundStyle(viewModel.aggregationMode == .total ? .white : Color.agonTextSecondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        Button {
-                            viewModel.aggregationMode = .average
-                        } label: {
-                            Text("Average")
-                                .font(.caption.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(viewModel.aggregationMode == .average ? Color.agonAccent : Color.clear)
-                                .foregroundStyle(viewModel.aggregationMode == .average ? .white : Color.agonTextSecondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                    }
-                    .background(Color.agonSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .padding(.horizontal)
-                }
-
                 // Loading / Error / Metric Cards
                 if viewModel.isLoading && viewModel.snapshot == nil && viewModel.weekSnapshots.isEmpty {
                     ProgressView("Loading health data...")
@@ -84,7 +53,7 @@ struct DashboardView: View {
                     // Aggregation label
                     if viewModel.selectedPeriod == .thisWeek {
                         HStack {
-                            Text(viewModel.aggregationMode == .total ? "Totals" : "Daily Average")
+                            Text("Daily Average")
                                 .font(.caption)
                                 .foregroundStyle(Color.agonTextSecondary)
                             Spacer()
