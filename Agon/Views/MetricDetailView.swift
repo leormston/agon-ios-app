@@ -11,6 +11,13 @@ struct MetricDetailView: View {
     @State private var showFriendOverlay = false
     @State private var animateChart = false
 
+    @AppStorage("goal_steps") private var stepsGoal: Double = 10_000
+    @AppStorage("goal_exerciseMinutes") private var exerciseGoal: Double = 30
+    @AppStorage("goal_distanceWalked") private var distanceGoal: Double = 5.0
+    @AppStorage("goal_totalSleep") private var sleepGoal: Double = 8.0
+    @AppStorage("goal_timeInDaylight") private var daylightGoal: Double = 60
+    @AppStorage("goal_distanceRan") private var distanceRanGoal: Double = 3.0
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -428,12 +435,12 @@ struct MetricDetailView: View {
 
     private var goalForMetric: Double? {
         switch metricType {
-        case .steps: return 10_000
-        case .exerciseMinutes: return 30
-        case .distanceWalked: return 5.0
-        case .totalSleep: return 8.0
-        case .timeInDaylight: return 60
-        default: return nil
+        case .steps: return stepsGoal
+        case .exerciseMinutes: return exerciseGoal
+        case .distanceWalked: return distanceGoal
+        case .distanceRan: return distanceRanGoal
+        case .totalSleep: return sleepGoal
+        case .timeInDaylight: return daylightGoal
         }
     }
 
