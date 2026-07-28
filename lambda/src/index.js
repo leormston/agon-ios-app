@@ -100,6 +100,14 @@ exports.handler = async (event) => {
         if (!userId) return response(401, { error: "Unauthorized" });
         return await uploadAvatar(userId, body);
 
+      case "PUT /profile/goals":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await saveGoals(userId, JSON.parse(body));
+
+      case "GET /profile/goals":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getGoals(userId);
+
       case "GET /friends":
         if (!userId) return response(401, { error: "Unauthorized" });
         return await getFriends(userId);
@@ -677,6 +685,35 @@ async function getUserProfile(targetUserId, currentUserId) {
     yourSnapshots,
     activeChallengesCount: (challengesResult.Items || []).length,
   });
+}
+
+// MARK: - Goals
+
+async function saveGoals(userId, goals) {
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { userId },
+      UpdateExpression: "SET goals = :goals, updatedAt = :now",
+      ExpressionAttributeValues: {
+        ":goals": goals,
+        ":now": new Date().toISOString(),
+      },
+    })
+  );
+
+  return response(200, { message: "Goals saved", goals });
+}
+
+async function getGoals(userId) {
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { userId },
+    })
+  );
+
+  return response(200, { goals: result.Item?.goals || {} });
 }
 
 // MARK: - Avatar Upload

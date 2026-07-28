@@ -67,6 +67,18 @@ resource "aws_apigatewayv2_route" "upload_avatar" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "save_goals" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /profile/goals"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_goals" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /profile/goals"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "sync_health" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /health/sync"

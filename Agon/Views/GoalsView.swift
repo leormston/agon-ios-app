@@ -10,6 +10,9 @@ struct GoalsView: View {
     @AppStorage("goal_timeInDaylight") private var daylightGoal: Double = 60
     @AppStorage("goal_distanceRan") private var distanceRanGoal: Double = 3.0
 
+    @State private var isSaving = false
+    @State private var hasLoaded = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -34,10 +37,60 @@ struct GoalsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(Color.agonAccent)
+                    Button {
+                        Task {
+                            await saveGoals()
+                            dismiss()
+                        }
+                    } label: {
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Text("Save")
+                                .foregroundStyle(Color.agonAccent)
+                        }
+                    }
                 }
             }
+            .task {
+                if !hasLoaded {
+                    await loadGoalsFromBackend()
+                    hasLoaded = true
+                }
+            }
+        }
+    }
+
+    private func saveGoals() async {
+        isSaving = true
+        let goals: [String: Double] = [
+            "steps": stepsGoal,
+            "exerciseMinutes": exerciseGoal,
+            "distanceWalked": distanceGoal,
+            "distanceRan": distanceRanGoal,
+            "totalSleep": sleepGoal,
+            "timeInDaylight": daylightGoal,
+        ]
+        do {
+            try await APIService.shared.syncGoals(goals)
+        } catch {
+            print("Failed to sync goals: \(error)")
+        }
+        isSaving = false
+    }
+
+    private func loadGoalsFromBackend() async {
+        do {
+            let goals = try await APIService.shared.loadGoals()
+            if let v = goals["steps"] { stepsGoal = v }
+            if let v = goals["exerciseMinutes"] { exerciseGoal = v }
+            if let v = goals["distanceWalked"] { distanceGoal = v }
+            if let v = goals["distanceRan"] { distanceRanGoal = v }
+            if let v = goals["totalSleep"] { sleepGoal = v }
+            if let v = goals["timeInDaylight"] { daylightGoal = v }
+        } catch {
+            print("Failed to load goals from backend: \(error)")
+            // Use local AppStorage values as fallback
         }
     }
 }

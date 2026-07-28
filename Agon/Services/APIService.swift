@@ -60,6 +60,29 @@ final class APIService: ObservableObject {
         }
     }
 
+    // MARK: - Goals
+
+    func syncGoals(_ goals: [String: Double]) async throws {
+        let jsonData = try JSONSerialization.data(withJSONObject: goals)
+        let (_, response) = try await request(method: "PUT", path: "/profile/goals", body: jsonData)
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
+    func loadGoals() async throws -> [String: Double] {
+        let (data, response) = try await request(method: "GET", path: "/profile/goals")
+        guard response.statusCode == 200 else { return [:] }
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let goals = json?["goals"] as? [String: Any] ?? [:]
+        var result: [String: Double] = [:]
+        for (key, value) in goals {
+            if let num = value as? Double { result[key] = num }
+            else if let num = value as? Int { result[key] = Double(num) }
+        }
+        return result
+    }
+
     // MARK: - Feedback
 
     func submitFeedback(type: String, title: String, description: String) async throws {
