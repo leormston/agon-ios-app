@@ -591,23 +591,29 @@ struct MetricDetailView: View {
 
         let dataSource = allSnapshots.isEmpty ? snapshots : allSnapshots
 
-        let thisWeekTotal = totalForWeek(startingMonday: targetMonday, dataSource: dataSource)
-        let prevWeekTotal = totalForWeek(startingMonday: prevMonday, dataSource: dataSource)
+        let thisWeekAvg = averageForWeek(startingMonday: targetMonday, dataSource: dataSource)
+        let prevWeekAvg = averageForWeek(startingMonday: prevMonday, dataSource: dataSource)
 
-        guard prevWeekTotal > 0 else { return nil }
-        return ((thisWeekTotal - prevWeekTotal) / prevWeekTotal) * 100
+        guard prevWeekAvg > 0 else { return nil }
+        return ((thisWeekAvg - prevWeekAvg) / prevWeekAvg) * 100
     }
 
-    private func totalForWeek(startingMonday: Date, dataSource: [DailySnapshot]) -> Double {
+    private func averageForWeek(startingMonday: Date, dataSource: [DailySnapshot]) -> Double {
         let calendar = Calendar.current
         var total: Double = 0
+        var daysWithData: Int = 0
         for i in 0..<7 {
             let date = calendar.date(byAdding: .day, value: i, to: startingMonday)!
             if let snap = dataSource.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
-                total += valueForMetric(snap)
+                let value = valueForMetric(snap)
+                if value > 0 {
+                    total += value
+                    daysWithData += 1
+                }
             }
         }
-        return total
+        guard daysWithData > 0 else { return 0 }
+        return total / Double(daysWithData)
     }
 
     private var currentStreak: Int {
