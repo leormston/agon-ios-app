@@ -95,23 +95,42 @@ struct DashboardView: View {
                         .padding(.horizontal)
                     }
 
-                    // Metric Cards - 2 columns
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 16) {
-                        ForEach(viewModel.metrics) { metric in
-                            NavigationLink(destination: MetricDetailView(
-                                metricType: metric.type,
-                                snapshots: viewModel.snapshotsForChart,
-                                periodTitle: viewModel.periodTitle
-                            )) {
-                                MetricCard(metric: metric)
+                    // Metric Cards - 2 columns for Today, full-width mini charts for week views
+                    if viewModel.selectedPeriod == .today {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 16) {
+                            ForEach(viewModel.metrics) { metric in
+                                NavigationLink(destination: MetricDetailView(
+                                    metricType: metric.type,
+                                    snapshots: viewModel.snapshotsForChart,
+                                    periodTitle: viewModel.periodTitle
+                                )) {
+                                    MetricCard(metric: metric)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal)
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(viewModel.metrics) { metric in
+                                NavigationLink(destination: MetricDetailView(
+                                    metricType: metric.type,
+                                    snapshots: viewModel.snapshotsForChart,
+                                    periodTitle: viewModel.periodTitle
+                                )) {
+                                    MiniChartCard(
+                                        metric: metric,
+                                        snapshots: viewModel.snapshotsForChart
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
 
                 // Sync Button
@@ -258,6 +277,96 @@ struct CircularProgressView: View {
                 .foregroundStyle(Color.agonTextPrimary)
         }
         .frame(width: 50, height: 50)
+    }
+}
+
+// MARK: - Mini Chart Card (full-width for week views)
+
+import Charts
+
+struct MiniChartCard: View {
+    let metric: HealthMetric
+    let snapshots: [DailySnapshot]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Left: icon + value
+            VStack(alignment: .leading, spacing: 4) {
+                Image(systemName: metric.type.icon)
+                    .font(.title3)
+                    .foregroundStyle(colorForMetric(metric.type))
+
+                Text(metric.formattedValue)
+                    .font(.headline.bold())
+                    .foregroundStyle(Color.agonTextPrimary)
+
+                Text(metric.type.title)
+                    .font(.caption)
+                    .foregroundStyle(Color.agonTextSecondary)
+            }
+            .frame(width: 80, alignment: .leading)
+
+            // Right: mini line chart
+            Chart {
+                ForEach(chartData, id: \.date) { point in
+                    LineMark(
+                        x: .value("Day", point.date, unit: .day),
+                        y: .value("Value", point.value)
+                    )
+                    .foregroundStyle(colorForMetric(metric.type))
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+
+                    AreaMark(
+                        x: .value("Day", point.date, unit: .day),
+                        y: .value("Value", point.value)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [colorForMetric(metric.type).opacity(0.2), colorForMetric(metric.type).opacity(0.0)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+            }
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .frame(height: 50)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.agonSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var chartData: [ChartPoint] {
+        snapshots
+            .sorted { $0.date < $1.date }
+            .map { snapshot in
+                ChartPoint(date: snapshot.date, value: valueForMetric(snapshot))
+            }
+    }
+
+    private func valueForMetric(_ snapshot: DailySnapshot) -> Double {
+        switch metric.type {
+        case .steps: return snapshot.steps
+        case .distanceWalked: return snapshot.distanceWalked
+        case .distanceRan: return snapshot.distanceRan
+        case .totalSleep: return snapshot.totalSleep
+        case .timeInDaylight: return snapshot.timeInDaylight
+        case .exerciseMinutes: return snapshot.exerciseMinutes
+        }
+    }
+
+    private func colorForMetric(_ type: HealthMetricType) -> Color {
+        switch type {
+        case .steps: return Color.agonAccent
+        case .distanceWalked: return Color.agonSecondary
+        case .distanceRan: return Color.agonAccent
+        case .totalSleep: return Color.agonTextSecondary
+        case .timeInDaylight: return Color.yellow
+        case .exerciseMinutes: return Color.green
+        }
     }
 }
 
