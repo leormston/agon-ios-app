@@ -28,9 +28,6 @@ struct DashboardView: View {
                     DashboardTab(title: "This Week", isSelected: viewModel.selectedPeriod == .thisWeek) {
                         Task { await viewModel.selectPeriod(.thisWeek) }
                     }
-                    DashboardTab(title: "Last 7 Days", isSelected: viewModel.selectedPeriod == .last7Days) {
-                        Task { await viewModel.selectPeriod(.last7Days) }
-                    }
                 }
                 .background(Color.agonSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
