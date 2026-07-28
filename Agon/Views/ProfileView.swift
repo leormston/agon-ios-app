@@ -8,6 +8,7 @@ struct ProfileView: View {
     @State private var avatarImage: Image?
     @State private var isUploadingAvatar = false
     @State private var showFeedback = false
+    @State private var showGoals = false
     @AppStorage("avatarUrl") private var avatarUrl = ""
 
     var body: some View {
@@ -97,7 +98,9 @@ struct ProfileView: View {
                         Divider().foregroundStyle(Color.agonBorder)
                         ProfileRow(icon: "bell.fill", title: "Notifications", color: Color.agonSecondary)
                         Divider().foregroundStyle(Color.agonBorder)
-                        ProfileRow(icon: "target", title: "Goals", color: Color.agonAccent)
+                        Button { showGoals = true } label: {
+                            ProfileRow(icon: "target", title: "Goals", color: Color.agonAccent)
+                        }
                         Divider().foregroundStyle(Color.agonBorder)
                         ProfileRow(icon: "lock.fill", title: "Privacy", color: Color.agonSecondary)
                         Divider().foregroundStyle(Color.agonBorder)
@@ -164,6 +167,9 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showFeedback) {
                 FeedbackView()
+            }
+            .sheet(isPresented: $showGoals) {
+                GoalsView()
             }
         }
     }

@@ -6,110 +6,369 @@ struct MetricDetailView: View {
     let snapshots: [DailySnapshot]
     let periodTitle: String
 
+    @State private var selectedPoint: ChartPoint?
+    @State private var showBarChart = false
+    @State private var showFriendOverlay = false
+    @State private var animateChart = false
+
+    @AppStorage("goal_steps") private var stepsGoal: Double = 10_000
+    @AppStorage("goal_exerciseMinutes") private var exerciseGoal: Double = 30
+    @AppStorage("goal_distanceWalked") private var distanceGoal: Double = 5.0
+    @AppStorage("goal_totalSleep") private var sleepGoal: Double = 8.0
+    @AppStorage("goal_timeInDaylight") private var daylightGoal: Double = 60
+    @AppStorage("goal_distanceRan") private var distanceRanGoal: Double = 3.0
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: metricType.icon)
-                        .font(.system(size: 40))
-                        .foregroundStyle(Color.agonAccent)
-                    Text(metricType.title)
-                        .font(.title2.bold())
-                        .foregroundStyle(Color.agonTextPrimary)
-                    Text(periodTitle)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.agonTextSecondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .background(Color.agonSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                // Header with trend
+                headerSection
 
-                // Chart
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Daily Breakdown")
-                        .font(.headline)
-                        .foregroundStyle(Color.agonTextPrimary)
+                // Chart type toggle
+                chartToggle
 
-                    if chartData.isEmpty {
-                        Text("No data available")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.agonTextSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                    } else {
-                        Chart {
-                            ForEach(chartData, id: \.date) { point in
-                                LineMark(
-                                    x: .value("Day", point.date, unit: .day),
-                                    y: .value(metricType.title, point.value)
-                                )
-                                .foregroundStyle(Color.agonAccent)
-                                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                // Main Chart
+                chartSection
 
-                                AreaMark(
-                                    x: .value("Day", point.date, unit: .day),
-                                    y: .value(metricType.title, point.value)
-                                )
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [Color.agonAccent.opacity(0.3), Color.agonAccent.opacity(0.0)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-
-                                PointMark(
-                                    x: .value("Day", point.date, unit: .day),
-                                    y: .value(metricType.title, point.value)
-                                )
-                                .foregroundStyle(Color.agonAccent)
-                                .symbolSize(30)
-                            }
-                        }
-                        .chartXAxis {
-                            AxisMarks(values: .stride(by: .day)) { value in
-                                AxisValueLabel(format: .dateTime.weekday(.abbreviated))
-                                    .foregroundStyle(Color.agonTextSecondary)
-                            }
-                        }
-                        .chartYAxis {
-                            AxisMarks { _ in
-                                AxisGridLine()
-                                    .foregroundStyle(Color.agonBorder)
-                                AxisValueLabel()
-                                    .foregroundStyle(Color.agonTextSecondary)
-                            }
-                        }
-                        .frame(height: 220)
-                    }
-                }
-                .padding()
-                .background(Color.agonSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                // Streak
+                streakSection
 
                 // Summary Stats
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Summary")
-                        .font(.headline)
-                        .foregroundStyle(Color.agonTextPrimary)
-
-                    HStack(spacing: 0) {
-                        SummaryItem(label: "Total", value: formattedTotal)
-                        SummaryItem(label: "Average", value: formattedAverage)
-                        SummaryItem(label: "Best", value: formattedBest)
-                    }
-                }
-                .padding()
-                .background(Color.agonSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                summarySection
             }
             .padding()
         }
         .background(Color.agonBackground)
         .navigationTitle(metricType.title)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.0)) {
+                animateChart = true
+            }
+        }
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Image(systemName: metricType.icon)
+                .font(.system(size: 40))
+                .foregroundStyle(Color.agonAccent)
+            Text(metricType.title)
+                .font(.title2.bold())
+                .foregroundStyle(Color.agonTextPrimary)
+            Text(periodTitle)
+                .font(.subheadline)
+                .foregroundStyle(Color.agonTextSecondary)
+
+            // Day-over-day trend
+            if let trend = dayOverDayTrend {
+                HStack(spacing: 4) {
+                    Image(systemName: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.caption)
+                    Text(String(format: "%+.1f%% vs yesterday", trend))
+                        .font(.caption.bold())
+                }
+                .foregroundStyle(trend >= 0 ? Color.agonAccent : Color.agonTextSecondary)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(Color.agonSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Chart Toggle
+
+    private var chartToggle: some View {
+        HStack(spacing: 0) {
+            Button {
+                withAnimation { showBarChart = false }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chart.xyaxis.line")
+                    Text("Line")
+                }
+                .font(.caption.bold())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(!showBarChart ? Color.agonAccent : Color.clear)
+                .foregroundStyle(!showBarChart ? .white : Color.agonTextSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            Button {
+                withAnimation { showBarChart = true }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chart.bar.fill")
+                    Text("Bar")
+                }
+                .font(.caption.bold())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(showBarChart ? Color.agonAccent : Color.clear)
+                .foregroundStyle(showBarChart ? .white : Color.agonTextSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .background(Color.agonSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    // MARK: - Chart
+
+    private var chartSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Daily Breakdown")
+                    .font(.headline)
+                    .foregroundStyle(Color.agonTextPrimary)
+                Spacer()
+
+                // Selected point tooltip
+                if let point = selectedPoint {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(formatValue(point.value))
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.agonAccent)
+                        Text(shortDateLabel(point.date))
+                            .font(.caption2)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.agonBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            if chartData.isEmpty {
+                Text("No data available")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.agonTextSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+            } else {
+                Chart {
+                    if showBarChart {
+                        barChartContent
+                    } else {
+                        lineChartContent
+                    }
+
+                    // Average line
+                    RuleMark(y: .value("Average", average))
+                        .foregroundStyle(Color.agonSecondary.opacity(0.7))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                        .annotation(position: .top, alignment: .leading) {
+                            Text("Avg")
+                                .font(.caption2)
+                                .foregroundStyle(Color.agonSecondary)
+                        }
+
+                    // Goal line (if applicable)
+                    if let goal = goalForMetric {
+                        RuleMark(y: .value("Goal", goal))
+                            .foregroundStyle(Color.agonAccent.opacity(0.5))
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text("Goal")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.agonAccent)
+                            }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .day)) { _ in
+                        AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks { _ in
+                        AxisGridLine()
+                            .foregroundStyle(Color.agonBorder.opacity(0.5))
+                        AxisValueLabel()
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+                }
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        Rectangle()
+                            .fill(Color.clear)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let x = value.location.x
+                                        if let date: Date = proxy.value(atX: x) {
+                                            selectedPoint = closestPoint(to: date)
+                                        }
+                                    }
+                                    .onEnded { _ in
+                                        // Keep selection visible
+                                    }
+                            )
+                    }
+                }
+                .frame(height: 240)
+                .opacity(animateChart ? 1 : 0)
+                .offset(y: animateChart ? 0 : 20)
+
+                // Legend
+                HStack(spacing: 16) {
+                    legendItem(color: Color.agonSecondary, label: "Average", dashed: true)
+                    if goalForMetric != nil {
+                        legendItem(color: Color.agonAccent, label: "Goal", dashed: true)
+                    }
+                    legendItem(color: Color.green, label: "Above avg", dashed: false)
+                    legendItem(color: Color.agonTextSecondary, label: "Below avg", dashed: false)
+                }
+                .font(.caption2)
+            }
+        }
+        .padding()
+        .background(Color.agonSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Line Chart Content
+
+    @ChartContentBuilder
+    private var lineChartContent: some ChartContent {
+        ForEach(chartData, id: \.date) { point in
+            LineMark(
+                x: .value("Day", point.date, unit: .day),
+                y: .value(metricType.title, point.value)
+            )
+            .foregroundStyle(Color.agonAccent)
+            .lineStyle(StrokeStyle(lineWidth: 2.5))
+            .interpolationMethod(.catmullRom)
+
+            AreaMark(
+                x: .value("Day", point.date, unit: .day),
+                y: .value(metricType.title, point.value)
+            )
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [Color.agonAccent.opacity(0.2), Color.agonAccent.opacity(0.0)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .interpolationMethod(.catmullRom)
+
+            // Colour-coded points - green above avg, grey below
+            PointMark(
+                x: .value("Day", point.date, unit: .day),
+                y: .value(metricType.title, point.value)
+            )
+            .foregroundStyle(point.value >= average ? Color.green : Color.agonTextSecondary)
+            .symbolSize(selectedPoint?.date == point.date ? 80 : 40)
+
+            // Min/max annotations
+            if point.value == best {
+                PointMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value(metricType.title, point.value)
+                )
+                .annotation(position: .top, spacing: 4) {
+                    Text("Best")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.agonAccent)
+                }
+                .foregroundStyle(.clear)
+                .symbolSize(0)
+            }
+
+            if point.value == worst && chartData.count > 1 {
+                PointMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value(metricType.title, point.value)
+                )
+                .annotation(position: .bottom, spacing: 4) {
+                    Text("Low")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.agonTextSecondary)
+                }
+                .foregroundStyle(.clear)
+                .symbolSize(0)
+            }
+        }
+    }
+
+    // MARK: - Bar Chart Content
+
+    @ChartContentBuilder
+    private var barChartContent: some ChartContent {
+        ForEach(chartData, id: \.date) { point in
+            BarMark(
+                x: .value("Day", point.date, unit: .day),
+                y: .value(metricType.title, point.value)
+            )
+            .foregroundStyle(point.value >= average ? Color.agonAccent : Color.agonTextSecondary.opacity(0.5))
+            .cornerRadius(4)
+        }
+    }
+
+    // MARK: - Streak Section
+
+    private var streakSection: some View {
+        Group {
+            if currentStreak > 1 {
+                HStack {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(Color.agonAccent)
+                    Text("\(currentStreak)-day streak above average!")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                    Spacer()
+                }
+                .padding()
+                .background(Color.agonAccentTint.opacity(0.3))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
+    // MARK: - Summary
+
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Summary")
+                .font(.headline)
+                .foregroundStyle(Color.agonTextPrimary)
+
+            HStack(spacing: 0) {
+                SummaryItem(label: "Total", value: formattedTotal)
+                SummaryItem(label: "Average", value: formattedAverage)
+                SummaryItem(label: "Best", value: formattedBest)
+                SummaryItem(label: "Low", value: formattedWorst)
+            }
+        }
+        .padding()
+        .background(Color.agonSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Legend
+
+    private func legendItem(color: Color, label: String, dashed: Bool) -> some View {
+        HStack(spacing: 4) {
+            if dashed {
+                Rectangle()
+                    .stroke(color, style: StrokeStyle(lineWidth: 2, dash: [4, 2]))
+                    .frame(width: 14, height: 2)
+            } else {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+            }
+            Text(label)
+                .foregroundStyle(Color.agonTextSecondary)
+        }
     }
 
     // MARK: - Chart Data
@@ -133,7 +392,7 @@ struct MetricDetailView: View {
         }
     }
 
-    // MARK: - Summary
+    // MARK: - Computed Values
 
     private var total: Double {
         chartData.reduce(0) { $0 + $1.value }
@@ -148,17 +407,59 @@ struct MetricDetailView: View {
         chartData.max(by: { $0.value < $1.value })?.value ?? 0
     }
 
-    private var formattedTotal: String {
-        formatValue(total)
+    private var worst: Double {
+        chartData.min(by: { $0.value < $1.value })?.value ?? 0
     }
 
-    private var formattedAverage: String {
-        formatValue(average)
+    private var dayOverDayTrend: Double? {
+        let sorted = chartData.sorted { $0.date > $1.date }
+        guard sorted.count >= 2 else { return nil }
+        let today = sorted[0].value
+        let yesterday = sorted[1].value
+        guard yesterday > 0 else { return nil }
+        return ((today - yesterday) / yesterday) * 100
     }
 
-    private var formattedBest: String {
-        formatValue(best)
+    private var currentStreak: Int {
+        let sorted = chartData.sorted { $0.date > $1.date }
+        var streak = 0
+        for point in sorted {
+            if point.value >= average {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
     }
+
+    private var goalForMetric: Double? {
+        switch metricType {
+        case .steps: return stepsGoal
+        case .exerciseMinutes: return exerciseGoal
+        case .distanceWalked: return distanceGoal
+        case .distanceRan: return distanceRanGoal
+        case .totalSleep: return sleepGoal
+        case .timeInDaylight: return daylightGoal
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func closestPoint(to date: Date) -> ChartPoint? {
+        chartData.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
+    }
+
+    private func shortDateLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d"
+        return formatter.string(from: date)
+    }
+
+    private var formattedTotal: String { formatValue(total) }
+    private var formattedAverage: String { formatValue(average) }
+    private var formattedBest: String { formatValue(best) }
+    private var formattedWorst: String { formatValue(worst) }
 
     private func formatValue(_ value: Double) -> String {
         switch metricType {
