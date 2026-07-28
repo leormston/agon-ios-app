@@ -304,8 +304,8 @@ struct MetricDetailView: View {
                 .symbolSize(24)
             }
 
-            // Min/max annotations
-            if point.value == best {
+            // Min/max annotations (only on real data points)
+            if hasData && point.value == best && dataPoints.count > 1 {
                 PointMark(
                     x: .value("Day", point.date, unit: .day),
                     y: .value(metricType.title, point.value)
@@ -319,7 +319,7 @@ struct MetricDetailView: View {
                 .symbolSize(0)
             }
 
-            if point.value == worst && chartData.count > 1 {
+            if hasData && point.value == worst && dataPoints.count > 1 {
                 PointMark(
                     x: .value("Day", point.date, unit: .day),
                     y: .value(metricType.title, point.value)
@@ -447,25 +447,32 @@ struct MetricDetailView: View {
 
     // MARK: - Computed Values
 
+    // Only points that have real data (not grey placeholder dots)
+    private var dataPoints: [ChartPoint] {
+        chartData.filter { point in
+            datesWithData.contains(Calendar.current.startOfDay(for: point.date)) && point.value > 0
+        }
+    }
+
     private var total: Double {
-        chartData.reduce(0) { $0 + $1.value }
+        dataPoints.reduce(0) { $0 + $1.value }
     }
 
     private var average: Double {
-        guard !chartData.isEmpty else { return 0 }
-        return total / Double(chartData.count)
+        guard !dataPoints.isEmpty else { return 0 }
+        return total / Double(dataPoints.count)
     }
 
     private var best: Double {
-        chartData.max(by: { $0.value < $1.value })?.value ?? 0
+        dataPoints.max(by: { $0.value < $1.value })?.value ?? 0
     }
 
     private var worst: Double {
-        chartData.min(by: { $0.value < $1.value })?.value ?? 0
+        dataPoints.min(by: { $0.value < $1.value })?.value ?? 0
     }
 
     private var dayOverDayTrend: Double? {
-        let sorted = chartData.sorted { $0.date > $1.date }
+        let sorted = dataPoints.sorted { $0.date > $1.date }
         guard sorted.count >= 2 else { return nil }
         let today = sorted[0].value
         let yesterday = sorted[1].value
@@ -474,7 +481,7 @@ struct MetricDetailView: View {
     }
 
     private var currentStreak: Int {
-        let sorted = chartData.sorted { $0.date > $1.date }
+        let sorted = dataPoints.sorted { $0.date > $1.date }
         var streak = 0
         for point in sorted {
             if point.value >= average {
