@@ -43,7 +43,10 @@ struct ContentView: View {
                     }
                 }
                 .padding(.vertical, 12)
-                .background(.thinMaterial)
+                .background(
+                    VisualEffectBlur(style: .systemChromeMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 25))
+                )
                 .clipShape(RoundedRectangle(cornerRadius: 25))
                 .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
                 .padding(.horizontal, 16)
