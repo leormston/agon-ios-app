@@ -16,7 +16,6 @@ struct FeedComingSoonView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .background(Color.agonBackground)
     }
 }
 

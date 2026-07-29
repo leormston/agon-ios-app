@@ -67,7 +67,6 @@ struct ChallengesView: View {
             }
             .padding()
         }
-        .background(Color.agonBackground)
         .refreshable {
             await viewModel.refresh()
         }

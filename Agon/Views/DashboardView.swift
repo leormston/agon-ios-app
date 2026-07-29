@@ -156,7 +156,6 @@ struct DashboardView: View {
             }
             .padding(.vertical)
         }
-        .background(Color.agonBackground)
         .refreshable {
             await viewModel.refresh()
         }

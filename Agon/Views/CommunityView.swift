@@ -200,7 +200,6 @@ struct CommunityView: View {
             }
             .padding()
         }
-        .background(Color.agonBackground)
         .refreshable {
             await viewModel.refresh()
         }

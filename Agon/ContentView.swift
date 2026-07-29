@@ -19,32 +19,44 @@ struct ContentView: View {
                 OfflineBanner()
 
                 TabView(selection: $selectedTab) {
-                    DashboardView()
-                        .toolbarBackground(.hidden, for: .tabBar)
-                        .tag(0)
-                        .tabItem {
-                            Label("Dashboard", systemImage: "heart.text.square")
-                        }
+                    ZStack {
+                        Color.agonBackground.ignoresSafeArea()
+                        DashboardView()
+                    }
+                    .toolbarBackground(.hidden, for: .tabBar)
+                    .tag(0)
+                    .tabItem {
+                        Label("Dashboard", systemImage: "heart.text.square")
+                    }
 
-                    FeedComingSoonView()
-                        .toolbarBackground(.hidden, for: .tabBar)
-                        .tag(1)
-                        .tabItem {
-                            Label("Feed", systemImage: "text.bubble")
-                        }
+                    ZStack {
+                        Color.agonBackground.ignoresSafeArea()
+                        FeedComingSoonView()
+                    }
+                    .toolbarBackground(.hidden, for: .tabBar)
+                    .tag(1)
+                    .tabItem {
+                        Label("Feed", systemImage: "text.bubble")
+                    }
 
-                    ChallengesView()
-                        .toolbarBackground(.hidden, for: .tabBar)
-                        .tag(2)
-                        .tabItem {
-                            Label("Challenges", systemImage: "trophy")
-                        }
+                    ZStack {
+                        Color.agonBackground.ignoresSafeArea()
+                        ChallengesView()
+                    }
+                    .toolbarBackground(.hidden, for: .tabBar)
+                    .tag(2)
+                    .tabItem {
+                        Label("Challenges", systemImage: "trophy")
+                    }
 
-                    CommunityView()
-                        .toolbarBackground(.hidden, for: .tabBar)
-                        .tag(3)
-                        .tabItem {
-                            Label("Friends", systemImage: "person.2")
+                    ZStack {
+                        Color.agonBackground.ignoresSafeArea()
+                        CommunityView()
+                    }
+                    .toolbarBackground(.hidden, for: .tabBar)
+                    .tag(3)
+                    .tabItem {
+                        Label("Friends", systemImage: "person.2")
                         }
                 }
                 .tint(Color.agonAccent)
