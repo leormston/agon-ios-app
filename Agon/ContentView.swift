@@ -43,7 +43,7 @@ struct ContentView: View {
                     }
                 }
                 .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
+                .background(.thinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 25))
                 .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
                 .padding(.horizontal, 16)
