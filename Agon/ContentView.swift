@@ -5,12 +5,8 @@ struct ContentView: View {
     @State private var showProfile = false
 
     init() {
-        let appearance = UITabBarAppearance()
-        appearance.configureWithTransparentBackground()
-        appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
-        appearance.shadowColor = .clear
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
+        // Hide the default tab bar completely
+        UITabBar.appearance().isHidden = true
     }
 
     var body: some View {
@@ -18,48 +14,25 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 OfflineBanner()
 
-                TabView(selection: $selectedTab) {
-                    ZStack {
-                        Color.agonBackground.ignoresSafeArea()
+                ZStack(alignment: .bottom) {
+                    // Content
+                    TabView(selection: $selectedTab) {
                         DashboardView()
-                    }
-                    .toolbarBackground(.hidden, for: .tabBar)
-                    .tag(0)
-                    .tabItem {
-                        Label("Dashboard", systemImage: "heart.text.square")
-                    }
+                            .tag(0)
 
-                    ZStack {
-                        Color.agonBackground.ignoresSafeArea()
                         FeedComingSoonView()
-                    }
-                    .toolbarBackground(.hidden, for: .tabBar)
-                    .tag(1)
-                    .tabItem {
-                        Label("Feed", systemImage: "text.bubble")
-                    }
+                            .tag(1)
 
-                    ZStack {
-                        Color.agonBackground.ignoresSafeArea()
                         ChallengesView()
-                    }
-                    .toolbarBackground(.hidden, for: .tabBar)
-                    .tag(2)
-                    .tabItem {
-                        Label("Challenges", systemImage: "trophy")
+                            .tag(2)
+
+                        CommunityView()
+                            .tag(3)
                     }
 
-                    ZStack {
-                        Color.agonBackground.ignoresSafeArea()
-                        CommunityView()
-                    }
-                    .toolbarBackground(.hidden, for: .tabBar)
-                    .tag(3)
-                    .tabItem {
-                        Label("Friends", systemImage: "person.2")
-                        }
+                    // Custom tab bar
+                    CustomTabBar(selectedTab: $selectedTab)
                 }
-                .tint(Color.agonAccent)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -87,6 +60,47 @@ struct ContentView: View {
                 ProfileView()
             }
         }
+    }
+}
+
+// MARK: - Custom Tab Bar
+
+struct CustomTabBar: View {
+    @Binding var selectedTab: Int
+
+    private let tabs: [(icon: String, label: String)] = [
+        ("heart.text.square", "Dashboard"),
+        ("text.bubble", "Feed"),
+        ("trophy", "Challenges"),
+        ("person.2", "Friends"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<tabs.count, id: \.self) { index in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedTab = index
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tabs[index].icon)
+                            .font(.system(size: 20))
+                        Text(tabs[index].label)
+                            .font(.system(size: 10))
+                    }
+                    .foregroundStyle(selectedTab == index ? Color.agonAccent : Color.agonTextSecondary)
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 28)
+        .background(
+            Color.agonBackground.opacity(0.85)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 
