@@ -5,34 +5,49 @@ struct ContentView: View {
     @State private var showProfile = false
 
     init() {
-        // Hide the default tab bar completely
         UITabBar.appearance().isHidden = true
     }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                OfflineBanner()
-
-                ZStack(alignment: .bottom) {
-                    // Content
-                    TabView(selection: $selectedTab) {
-                        DashboardView()
-                            .tag(0)
-
-                        FeedComingSoonView()
-                            .tag(1)
-
-                        ChallengesView()
-                            .tag(2)
-
-                        CommunityView()
-                            .tag(3)
+            ZStack(alignment: .bottom) {
+                // Full screen content
+                Group {
+                    switch selectedTab {
+                    case 0: DashboardView()
+                    case 1: FeedComingSoonView()
+                    case 2: ChallengesView()
+                    case 3: CommunityView()
+                    default: DashboardView()
                     }
-
-                    // Custom tab bar
-                    CustomTabBar(selectedTab: $selectedTab)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                // Floating tab bar overlaid on top
+                HStack(spacing: 0) {
+                    ForEach(0..<4, id: \.self) { index in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedTab = index
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: tabIcon(index))
+                                    .font(.system(size: 18))
+                                Text(tabLabel(index))
+                                    .font(.system(size: 9))
+                            }
+                            .foregroundStyle(selectedTab == index ? Color.agonAccent : Color.agonTextSecondary)
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 25))
+                .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -61,46 +76,25 @@ struct ContentView: View {
             }
         }
     }
-}
 
-// MARK: - Custom Tab Bar
-
-struct CustomTabBar: View {
-    @Binding var selectedTab: Int
-
-    private let tabs: [(icon: String, label: String)] = [
-        ("heart.text.square", "Dashboard"),
-        ("text.bubble", "Feed"),
-        ("trophy", "Challenges"),
-        ("person.2", "Friends"),
-    ]
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<tabs.count, id: \.self) { index in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTab = index
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: tabs[index].icon)
-                            .font(.system(size: 20))
-                        Text(tabs[index].label)
-                            .font(.system(size: 10))
-                    }
-                    .foregroundStyle(selectedTab == index ? Color.agonAccent : Color.agonTextSecondary)
-                    .frame(maxWidth: .infinity)
-                }
-            }
+    private func tabIcon(_ index: Int) -> String {
+        switch index {
+        case 0: return "heart.text.square"
+        case 1: return "text.bubble"
+        case 2: return "trophy"
+        case 3: return "person.2"
+        default: return ""
         }
-        .padding(.top, 12)
-        .padding(.bottom, 28)
-        .background(
-            Color.agonBackground.opacity(0.85)
-                .background(.ultraThinMaterial)
-                .ignoresSafeArea(edges: .bottom)
-        )
+    }
+
+    private func tabLabel(_ index: Int) -> String {
+        switch index {
+        case 0: return "Dashboard"
+        case 1: return "Feed"
+        case 2: return "Challenges"
+        case 3: return "Friends"
+        default: return ""
+        }
     }
 }
 
