@@ -125,6 +125,45 @@ resource "aws_dynamodb_table" "activity" {
   }
 }
 
+# Feed table (Feature 5)
+resource "aws_dynamodb_table" "feed" {
+  name         = "agon-${var.environment}-feed"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "postId"
+
+  attribute {
+    name = "postId"
+    type = "S"
+  }
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "userId-index"
+    hash_key        = "userId"
+    range_key       = "timestamp"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "timestamp-index"
+    hash_key        = "timestamp"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Name = "agon-${var.environment}-feed"
+  }
+}
+
 # Profile images bucket
 resource "aws_s3_bucket" "profile_images" {
   bucket = "agon-${var.environment}-profile-images"

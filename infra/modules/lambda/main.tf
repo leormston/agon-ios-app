@@ -35,6 +35,8 @@ data "aws_iam_policy_document" "dynamodb_access" {
       "${var.friendships_table_arn}/index/*",
       var.activity_table_arn,
       "${var.activity_table_arn}/index/*",
+      var.feed_table_arn,
+      "${var.feed_table_arn}/index/*",
     ]
   }
 }
@@ -106,6 +108,7 @@ resource "aws_lambda_function" "api" {
       CHALLENGES_TABLE       = "agon-${var.environment}-challenges"
       FRIENDSHIPS_TABLE      = "agon-${var.environment}-friendships"
       ACTIVITY_TABLE         = "agon-${var.environment}-activity"
+      FEED_TABLE             = "agon-${var.environment}-feed"
       PROFILE_IMAGES_BUCKET  = "agon-${var.environment}-profile-images"
     }
   }

@@ -182,6 +182,82 @@ resource "aws_apigatewayv2_route" "submit_feedback" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# Public Challenges routes (Feature 1)
+resource "aws_apigatewayv2_route" "get_public_challenges" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /challenges/public"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "join_public_challenge" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /challenges/public/{challengeId}/join"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# Trophies routes (Feature 1)
+resource "aws_apigatewayv2_route" "check_trophies" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /trophies/check"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_trophies" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /trophies/{userId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# Feed routes (Feature 5)
+resource "aws_apigatewayv2_route" "create_feed_post" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /feed"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_feed" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /feed"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "like_feed_post" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /feed/{postId}/like"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "comment_feed_post" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /feed/{postId}/comment"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_feed_comments" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /feed/{postId}/comments"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# Rivals routes (Feature 6)
+resource "aws_apigatewayv2_route" "add_rival" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /rivals"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_rivals" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /rivals"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "remove_rival" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /rivals/{rivalId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Stage
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id

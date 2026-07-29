@@ -265,6 +265,130 @@ final class APIService: ObservableObject {
         return try JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
 
+    // MARK: - Public Challenges
+
+    func getPublicChallenges() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/challenges/public")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let array = json as? [[String: Any]] { return array }
+        if let dict = json as? [String: Any], let challenges = dict["challenges"] as? [[String: Any]] {
+            return challenges
+        }
+        return []
+    }
+
+    func joinPublicChallenge(id: String) async throws {
+        let (_, response) = try await request(method: "POST", path: "/challenges/public/\(id)/join")
+        guard response.statusCode == 200 else {
+            throw APIError.challengeJoinFailed
+        }
+    }
+
+    func checkTrophies() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "POST", path: "/trophies/check")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let dict = json as? [String: Any], let trophies = dict["awarded"] as? [[String: Any]] {
+            return trophies
+        }
+        return []
+    }
+
+    func getTrophies(userId: String) async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/trophies/\(userId)")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let array = json as? [[String: Any]] { return array }
+        if let dict = json as? [String: Any], let trophies = dict["trophies"] as? [[String: Any]] {
+            return trophies
+        }
+        return []
+    }
+
+    // MARK: - Feed
+
+    func getFeed() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/feed")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let array = json as? [[String: Any]] { return array }
+        if let dict = json as? [String: Any], let posts = dict["posts"] as? [[String: Any]] {
+            return posts
+        }
+        return []
+    }
+
+    func likePost(id: String) async throws {
+        let (_, response) = try await request(method: "POST", path: "/feed/\(id)/like")
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
+    func commentOnPost(id: String, text: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["text": text])
+        let (_, response) = try await request(method: "POST", path: "/feed/\(id)/comment", body: body)
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
+    func getComments(postId: String) async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/feed/\(postId)/comments")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let array = json as? [[String: Any]] { return array }
+        if let dict = json as? [String: Any], let comments = dict["comments"] as? [[String: Any]] {
+            return comments
+        }
+        return []
+    }
+
+    // MARK: - Rivals
+
+    func addRival(id: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["rivalId": id])
+        let (_, response) = try await request(method: "POST", path: "/rivals", body: body)
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
+    func getRivals() async throws -> [[String: Any]] {
+        let (data, response) = try await request(method: "GET", path: "/rivals")
+        guard response.statusCode == 200 else { return [] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let array = json as? [[String: Any]] { return array }
+        if let dict = json as? [String: Any], let rivals = dict["rivals"] as? [[String: Any]] {
+            return rivals
+        }
+        return []
+    }
+
+    func removeRival(id: String) async throws {
+        let (_, response) = try await request(method: "DELETE", path: "/rivals/\(id)")
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
+    // MARK: - Profile Flair
+
+    func updateProfileFlair(bio: String?, coolFact: String?, description: String?) async throws {
+        var body: [String: Any] = ["provider": AuthService.shared.currentUser?.provider ?? "apple"]
+        if let bio = bio { body["bio"] = bio }
+        if let coolFact = coolFact { body["coolFact"] = coolFact }
+        if let description = description { body["description"] = description }
+        body["createdAt"] = ISO8601DateFormatter().string(from: Date())
+
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        let (_, response) = try await request(method: "PUT", path: "/profile", body: jsonData)
+        guard response.statusCode == 200 else {
+            throw APIError.profileUpdateFailed
+        }
+    }
+
     // MARK: - Multi-day Sync
 
     func syncMultipleDays(days: [[String: Any]]) async throws {

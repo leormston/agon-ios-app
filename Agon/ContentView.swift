@@ -16,7 +16,7 @@ struct ContentView: View {
                             Label("Dashboard", systemImage: "heart.text.square")
                         }
 
-                    FeedComingSoonView()
+                    FeedView()
                         .tag(1)
                         .tabItem {
                             Label("Feed", systemImage: "text.bubble")

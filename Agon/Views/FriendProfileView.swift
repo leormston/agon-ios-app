@@ -41,9 +41,27 @@ struct FriendProfileView: View {
                                 .font(.caption)
                                 .foregroundStyle(Color.agonTextSecondary)
                         }
+
+                        // Profile Flair
+                        if hasFlair {
+                            VStack(alignment: .leading, spacing: 8) {
+                                if let bio = profile?["bio"] as? String, !bio.isEmpty {
+                                    flairRow(label: "Bio", value: bio)
+                                }
+                                if let coolFact = profile?["coolFact"] as? String, !coolFact.isEmpty {
+                                    flairRow(label: "Cool Fact", value: coolFact)
+                                }
+                                if let desc = profile?["description"] as? String, !desc.isEmpty {
+                                    flairRow(label: "About", value: desc)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
+                    .padding(.horizontal, 16)
                     .background(Color.agonSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
@@ -371,6 +389,24 @@ struct FriendProfileView: View {
     private var hasHealthData: Bool {
         guard let snapshots = profile?["recentSnapshots"] as? [[String: Any]] else { return false }
         return !snapshots.isEmpty
+    }
+
+    private var hasFlair: Bool {
+        let bio = profile?["bio"] as? String ?? ""
+        let coolFact = profile?["coolFact"] as? String ?? ""
+        let desc = profile?["description"] as? String ?? ""
+        return !bio.isEmpty || !coolFact.isEmpty || !desc.isEmpty
+    }
+
+    private func flairRow(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2.bold())
+                .foregroundStyle(Color.agonTextSecondary)
+            Text(value)
+                .font(.subheadline)
+                .foregroundStyle(Color.agonTextPrimary)
+        }
     }
 
     // MARK: - Load

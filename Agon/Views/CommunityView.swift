@@ -23,6 +23,26 @@ struct CommunityView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
 
+                // Rivals Link
+                NavigationLink {
+                    RivalsView()
+                } label: {
+                    HStack {
+                        Image(systemName: "figure.fencing")
+                            .foregroundStyle(Color.agonAccent)
+                        Text("Rivals")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.agonTextPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+                    .padding()
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
                 // Pending Requests
                 if !viewModel.pendingReceived.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {

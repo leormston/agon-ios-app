@@ -13,6 +13,10 @@ struct MetricDetailView: View {
     @State private var weekOffset: Int = 0
     @State private var allSnapshots: [DailySnapshot] = []
     @State private var isLoadingWeeks = false
+    @State private var showRivalOverlay = false
+    @State private var rivals: [Rival] = []
+    @State private var selectedRival: Rival?
+    @State private var rivalSnapshots: [DailySnapshot] = []
 
     @AppStorage("goal_steps") private var stepsGoal: Double = 10_000
     @AppStorage("goal_exerciseMinutes") private var exerciseGoal: Double = 30
@@ -29,6 +33,9 @@ struct MetricDetailView: View {
 
                 // Chart type toggle
                 chartToggle
+
+                // Rival overlay toggle
+                rivalOverlaySection
 
                 // Main Chart
                 chartSection
@@ -177,6 +184,69 @@ struct MetricDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
+    // MARK: - Rival Overlay
+
+    private var rivalOverlaySection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Toggle(isOn: $showRivalOverlay) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "figure.fencing")
+                            .foregroundStyle(Color.agonAccent)
+                        Text("Rival Overlay")
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.agonTextPrimary)
+                    }
+                }
+                .toggleStyle(SwitchToggleStyle(tint: Color.agonAccent))
+            }
+
+            if showRivalOverlay && !rivals.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(rivals) { rival in
+                            Button {
+                                selectedRival = rival
+                            } label: {
+                                Text(rival.displayName)
+                                    .font(.caption2.bold())
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(selectedRival?.id == rival.id ? Color.agonAccent : Color.agonSurface)
+                                    .foregroundStyle(selectedRival?.id == rival.id ? .white : Color.agonTextSecondary)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+        .task {
+            await loadRivals()
+        }
+    }
+
+    private func loadRivals() async {
+        do {
+            let raw = try await APIService.shared.getRivals()
+            rivals = raw.compactMap { dict -> Rival? in
+                guard let id = dict["rivalId"] as? String ?? dict["userId"] as? String else { return nil }
+                let name = dict["displayName"] as? String ?? "User"
+                let avatar = dict["avatarUrl"] as? String
+                var averages: [String: Double] = [:]
+                if let avgs = dict["averages"] as? [String: Any] {
+                    for (key, val) in avgs {
+                        averages[key] = (val as? Double) ?? Double(val as? Int ?? 0)
+                    }
+                }
+                return Rival(id: id, displayName: name, avatarUrl: avatar, averages: averages)
+            }
+        } catch {
+            print("Load rivals error: \(error)")
+        }
+    }
+
     // MARK: - Chart
 
     private var chartSection: some View {
@@ -257,6 +327,21 @@ struct MetricDetailView: View {
                     RuleMark(y: .value("Average", average))
                         .foregroundStyle(Color.agonSecondary.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+
+                    // Rival overlay line
+                    if showRivalOverlay, let rival = selectedRival {
+                        let rivalAvg = rival.average(for: metricType.rawValue)
+                        if rivalAvg > 0 {
+                            RuleMark(y: .value("Rival", rivalAvg))
+                                .foregroundStyle(Color.purple.opacity(0.7))
+                                .lineStyle(StrokeStyle(lineWidth: 2, dash: [6, 3]))
+                                .annotation(position: .top, alignment: .trailing) {
+                                    Text(rival.displayName)
+                                        .font(.system(size: 8))
+                                        .foregroundStyle(Color.purple)
+                                }
+                        }
+                    }
 
                     // Goal line (if applicable)
                     if let goal = goalForMetric {

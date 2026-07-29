@@ -7,6 +7,9 @@ final class ChallengesViewModel: ObservableObject {
 
     @Published var activeChallenges: [Challenge] = []
     @Published var invitedChallenges: [Challenge] = []
+    @Published var completedChallenges: [Challenge] = []
+    @Published var wonChallenges: [Challenge] = []
+    @Published var lostChallenges: [Challenge] = []
     @Published var friends: [FriendEntry] = []
     @Published var isLoading = false
     @Published var isCreating = false
@@ -26,6 +29,9 @@ final class ChallengesViewModel: ObservableObject {
 
             var active: [Challenge] = []
             var invited: [Challenge] = []
+            var completed: [Challenge] = []
+            var won: [Challenge] = []
+            var lost: [Challenge] = []
 
             for dict in rawChallenges {
                 guard let challenge = parseChallenge(from: dict) else { continue }
@@ -36,11 +42,23 @@ final class ChallengesViewModel: ObservableObject {
                     } else {
                         invited.append(challenge)
                     }
+                } else if challenge.status == "completed" {
+                    completed.append(challenge)
+                    // Determine if won or lost based on winner field
+                    let winner = dict["winner"] as? String
+                    if winner == currentUserId {
+                        won.append(challenge)
+                    } else if challenge.participants.contains(currentUserId) {
+                        lost.append(challenge)
+                    }
                 }
             }
 
             activeChallenges = active
             invitedChallenges = invited
+            completedChallenges = completed
+            wonChallenges = won
+            lostChallenges = lost
             errorMessage = nil
         } catch is CancellationError {
             // Ignore - task was cancelled by SwiftUI (e.g. view disappeared)
