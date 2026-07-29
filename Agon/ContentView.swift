@@ -6,8 +6,8 @@ struct ContentView: View {
 
     init() {
         let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
-        appearance.backgroundColor = UIColor(Color.agonBackground)
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
         appearance.shadowColor = .clear
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
@@ -20,24 +20,28 @@ struct ContentView: View {
 
                 TabView(selection: $selectedTab) {
                     DashboardView()
+                        .toolbarBackground(.hidden, for: .tabBar)
                         .tag(0)
                         .tabItem {
                             Label("Dashboard", systemImage: "heart.text.square")
                         }
 
                     FeedComingSoonView()
+                        .toolbarBackground(.hidden, for: .tabBar)
                         .tag(1)
                         .tabItem {
                             Label("Feed", systemImage: "text.bubble")
                         }
 
                     ChallengesView()
+                        .toolbarBackground(.hidden, for: .tabBar)
                         .tag(2)
                         .tabItem {
                             Label("Challenges", systemImage: "trophy")
                         }
 
                     CommunityView()
+                        .toolbarBackground(.hidden, for: .tabBar)
                         .tag(3)
                         .tabItem {
                             Label("Friends", systemImage: "person.2")
