@@ -44,7 +44,7 @@ struct ContentView: View {
                 }
                 .padding(.vertical, 12)
                 .background(
-                    VisualEffectBlur(style: .systemChromeMaterial)
+                    VisualEffectBlur(style: .systemThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 25))
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 25))
