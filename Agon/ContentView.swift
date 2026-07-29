@@ -6,8 +6,9 @@ struct ContentView: View {
 
     init() {
         let appearance = UITabBarAppearance()
-        appearance.configureWithTransparentBackground()
-        appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = UIColor(Color.agonBackground)
+        appearance.shadowColor = .clear
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
