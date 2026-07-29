@@ -4,6 +4,15 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showProfile = false
 
+    init() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = UIColor(Color.agonBackground.opacity(0.85))
+        appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
