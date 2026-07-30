@@ -4,6 +4,7 @@ struct ChallengesView: View {
     @StateObject private var viewModel = ChallengesViewModel()
     @State private var showCreateChallenge = false
     @State private var selectedCategory: ChallengeCategory = .active
+    @State private var joinedWeeklyChallenges: [PublicChallenge] = []
 
     var body: some View {
         ScrollView {
@@ -118,6 +119,7 @@ struct ChallengesView: View {
         }
         .task {
             await viewModel.loadChallenges()
+            await loadWeeklyChallenges()
         }
         .sheet(isPresented: $showCreateChallenge) {
             CreateChallengeView(viewModel: viewModel)
@@ -157,16 +159,39 @@ struct ChallengesView: View {
         Group {
             SectionHeader(title: "Agon Weekly", icon: "globe")
 
+            // Show joined weekly challenges
+            if !joinedWeeklyChallenges.isEmpty {
+                ForEach(joinedWeeklyChallenges) { challenge in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(challenge.name)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(Color.agonTextPrimary)
+                            HStack(spacing: 8) {
+                                Text("Avg: \(formatWeeklyProgress(challenge.progress, unit: challenge.metricUnit))")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.agonAccent)
+                                Text("Bronze: \(formatWeeklyProgress(challenge.bronzeTarget, unit: challenge.metricUnit))")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.agonTextSecondary)
+                            }
+                        }
+                        Spacer()
+                        ProgressView(value: min(1.0, challenge.progress / challenge.goldTarget))
+                            .tint(challenge.progress >= challenge.bronzeTarget ? Color.agonAccent : Color.agonBorder)
+                            .frame(width: 60)
+                    }
+                    .padding()
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+
             NavigationLink(destination: PublicChallengesView()) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Weekly challenges reset every Monday")
-                            .font(.caption)
-                            .foregroundStyle(Color.agonTextSecondary)
-                        Text("Tap to view and join challenges")
-                            .font(.caption)
-                            .foregroundStyle(Color.agonAccent)
-                    }
+                    Text(joinedWeeklyChallenges.isEmpty ? "Join weekly challenges" : "View all weekly challenges")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonAccent)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption)
@@ -178,6 +203,67 @@ struct ChallengesView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    // MARK: - Weekly Helpers
+
+    private func loadWeeklyChallenges() async {
+        do {
+            let raw = try await APIService.shared.getPublicChallenges()
+
+            let categoryMap: [String: String] = [
+                "steps": "walking", "distanceWalked": "distance",
+                "totalSleep": "sleep", "distanceRan": "running", "timeInDaylight": "sun"
+            ]
+            let nameMap: [String: String] = [
+                "steps": "Walker", "distanceWalked": "Hiker",
+                "totalSleep": "Sleeper", "distanceRan": "Runner", "timeInDaylight": "Sun Seeker"
+            ]
+
+            var grouped: [String: (bronze: [String: Any]?, silver: [String: Any]?, gold: [String: Any]?)] = [:]
+            for dict in raw {
+                guard let metric = dict["metric"] as? String, let tier = dict["tier"] as? String else { continue }
+                if grouped[metric] == nil { grouped[metric] = (nil, nil, nil) }
+                switch tier {
+                case "bronze": grouped[metric]?.bronze = dict
+                case "silver": grouped[metric]?.silver = dict
+                case "gold": grouped[metric]?.gold = dict
+                default: break
+                }
+            }
+
+            joinedWeeklyChallenges = grouped.compactMap { metric, tiers -> PublicChallenge? in
+                let joined = (tiers.bronze?["joined"] as? Bool) ?? false
+                guard joined else { return nil }
+
+                let bronzeTarget = (tiers.bronze?["target"] as? Double) ?? Double((tiers.bronze?["target"] as? Int) ?? 0)
+                let silverTarget = (tiers.silver?["target"] as? Double) ?? Double((tiers.silver?["target"] as? Int) ?? 0)
+                let goldTarget = (tiers.gold?["target"] as? Double) ?? Double((tiers.gold?["target"] as? Int) ?? 0)
+                let progress = (tiers.bronze?["progress"] as? Double) ?? 0
+
+                return PublicChallenge(
+                    id: metric,
+                    name: nameMap[metric] ?? metric,
+                    category: categoryMap[metric] ?? "walking",
+                    metric: metric,
+                    bronzeTarget: bronzeTarget,
+                    silverTarget: silverTarget,
+                    goldTarget: goldTarget,
+                    joined: true,
+                    progress: progress
+                )
+            }
+        } catch {
+            // Silent fail - not critical
+        }
+    }
+
+    private func formatWeeklyProgress(_ value: Double, unit: String) -> String {
+        if unit == "km" || unit == "hrs" {
+            return String(format: "%.1f %@", value, unit)
+        }
+        return "\(Int(value)) \(unit)"
+    }
     }
 
     // MARK: - Completed Section
