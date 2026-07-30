@@ -52,6 +52,24 @@ struct ChallengeDetailView: View {
                 .background(Color.agonSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
+                // Race Track Progress
+                if challenge.isActive {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "flag.checkered")
+                                .foregroundStyle(Color.agonAccent)
+                            Text("Race Progress")
+                                .font(.headline)
+                                .foregroundStyle(Color.agonTextPrimary)
+                        }
+
+                        DetailRaceTrack(scores: scores, challenge: challenge)
+                    }
+                    .padding()
+                    .background(Color.agonSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
                 // Leaderboard
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
@@ -300,6 +318,77 @@ struct InfoRow: View {
                 .foregroundStyle(Color.agonTextPrimary)
         }
         .padding()
+    }
+}
+
+// MARK: - Detail Race Track (Feature 2)
+
+struct DetailRaceTrack: View {
+    let scores: [(name: String, score: Int, isCurrentUser: Bool, avatarUrl: String?, userId: String)]
+    let challenge: Challenge
+
+    var body: some View {
+        VStack(spacing: 8) {
+            let maxScore = max(1, scores.map(\.score).max() ?? 1)
+
+            ForEach(Array(scores.enumerated()), id: \.offset) { index, entry in
+                HStack(spacing: 8) {
+                    // Avatar/initial
+                    if let avatarUrl = entry.avatarUrl, let url = URL(string: avatarUrl) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            raceInitial(name: entry.name, isCurrentUser: entry.isCurrentUser)
+                        }
+                        .frame(width: 24, height: 24)
+                        .clipShape(Circle())
+                    } else {
+                        raceInitial(name: entry.name, isCurrentUser: entry.isCurrentUser)
+                    }
+
+                    // Track
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Track background
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.agonBackground)
+                                .frame(height: 12)
+
+                            // Progress fill
+                            let progress = Double(entry.score) / Double(maxScore)
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(entry.isCurrentUser ? Color.agonAccent : Color.agonSecondary.opacity(0.6))
+                                .frame(width: max(4, geometry.size.width * progress), height: 12)
+                        }
+                    }
+                    .frame(height: 12)
+
+                    // Score
+                    Text("\(entry.score)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(entry.isCurrentUser ? Color.agonAccent : Color.agonTextSecondary)
+                        .frame(width: 40, alignment: .trailing)
+                }
+            }
+
+            if scores.isEmpty {
+                Text("Sync your health data to see progress")
+                    .font(.caption)
+                    .foregroundStyle(Color.agonTextSecondary)
+                    .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private func raceInitial(name: String, isCurrentUser: Bool) -> some View {
+        Circle()
+            .fill(isCurrentUser ? Color.agonAccent : Color.agonBorder)
+            .frame(width: 24, height: 24)
+            .overlay {
+                Text(String(name.prefix(1)))
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(isCurrentUser ? .white : Color.agonTextPrimary)
+            }
     }
 }
 

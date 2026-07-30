@@ -22,6 +22,10 @@ variable "activity_table_arn" {
   type = string
 }
 
+variable "feed_table_arn" {
+  type = string
+}
+
 variable "profile_images_bucket_arn" {
   type = string
 }

@@ -38,6 +38,14 @@ output "activity_table_arn" {
   value = aws_dynamodb_table.activity.arn
 }
 
+output "feed_table_name" {
+  value = aws_dynamodb_table.feed.name
+}
+
+output "feed_table_arn" {
+  value = aws_dynamodb_table.feed.arn
+}
+
 output "profile_images_bucket" {
   value = aws_s3_bucket.profile_images.bucket
 }

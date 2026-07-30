@@ -23,7 +23,27 @@ const HEALTH_SNAPSHOTS_TABLE = process.env.HEALTH_SNAPSHOTS_TABLE;
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE;
 const FRIENDSHIPS_TABLE = process.env.FRIENDSHIPS_TABLE;
 const ACTIVITY_TABLE = process.env.ACTIVITY_TABLE;
+const FEED_TABLE = process.env.FEED_TABLE;
 const PROFILE_IMAGES_BUCKET = process.env.PROFILE_IMAGES_BUCKET;
+
+// Public Challenges (Feature 1)
+const PUBLIC_CHALLENGES = [
+  { id: 'bronze-walker', title: 'Bronze Walker', metric: 'steps', target: 5000, tier: 'bronze', description: 'Average 5,000 steps per day for 7 days' },
+  { id: 'silver-walker', title: 'Silver Walker', metric: 'steps', target: 10000, tier: 'silver', description: 'Average 10,000 steps per day for 7 days' },
+  { id: 'gold-walker', title: 'Gold Walker', metric: 'steps', target: 15000, tier: 'gold', description: 'Average 15,000 steps per day for 7 days' },
+  { id: 'bronze-hiker', title: 'Bronze Hiker', metric: 'distanceWalked', target: 3, tier: 'bronze', description: 'Average 3km walked per day for 7 days' },
+  { id: 'silver-hiker', title: 'Silver Hiker', metric: 'distanceWalked', target: 5, tier: 'silver', description: 'Average 5km walked per day for 7 days' },
+  { id: 'gold-hiker', title: 'Gold Hiker', metric: 'distanceWalked', target: 8, tier: 'gold', description: 'Average 8km walked per day for 7 days' },
+  { id: 'bronze-sleeper', title: 'Bronze Sleeper', metric: 'totalSleep', target: 7, tier: 'bronze', description: 'Average 7 hours sleep per day for 7 days' },
+  { id: 'silver-sleeper', title: 'Silver Sleeper', metric: 'totalSleep', target: 8, tier: 'silver', description: 'Average 8 hours sleep per day for 7 days' },
+  { id: 'gold-sleeper', title: 'Gold Sleeper', metric: 'totalSleep', target: 9, tier: 'gold', description: 'Average 9 hours sleep per day for 7 days' },
+  { id: 'bronze-runner', title: 'Bronze Runner', metric: 'distanceRan', target: 2, tier: 'bronze', description: 'Average 2km running per day for 7 days' },
+  { id: 'silver-runner', title: 'Silver Runner', metric: 'distanceRan', target: 4, tier: 'silver', description: 'Average 4km running per day for 7 days' },
+  { id: 'gold-runner', title: 'Gold Runner', metric: 'distanceRan', target: 6, tier: 'gold', description: 'Average 6km running per day for 7 days' },
+  { id: 'bronze-sun', title: 'Bronze Sun Seeker', metric: 'timeInDaylight', target: 30, tier: 'bronze', description: 'Average 30 min in sun per day for 7 days' },
+  { id: 'silver-sun', title: 'Silver Sun Seeker', metric: 'timeInDaylight', target: 60, tier: 'silver', description: 'Average 60 min in sun per day for 7 days' },
+  { id: 'gold-sun', title: 'Gold Sun Seeker', metric: 'timeInDaylight', target: 120, tier: 'gold', description: 'Average 120 min in sun per day for 7 days' },
+];
 
 exports.handler = async (event) => {
   const { routeKey, body, requestContext, pathParameters, headers } = event;
@@ -138,6 +158,57 @@ exports.handler = async (event) => {
         if (!userId) return response(401, { error: "Unauthorized" });
         return await submitFeedback(userId, JSON.parse(body));
 
+      // Public Challenges (Feature 1)
+      case "GET /challenges/public":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getPublicChallenges(userId);
+
+      case "POST /challenges/public/{challengeId}/join":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await joinPublicChallenge(userId, pathParameters?.challengeId);
+
+      // Trophies (Feature 1)
+      case "POST /trophies/check":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await checkTrophies(userId);
+
+      case "GET /trophies/{userId}":
+        return await getTrophies(pathParameters?.userId);
+
+      // Feed (Feature 5)
+      case "POST /feed":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await createFeedPost(userId, JSON.parse(body));
+
+      case "GET /feed":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getFeed(userId);
+
+      case "POST /feed/{postId}/like":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await likeFeedPost(userId, pathParameters?.postId);
+
+      case "POST /feed/{postId}/comment":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await commentOnFeedPost(userId, pathParameters?.postId, JSON.parse(body));
+
+      case "GET /feed/{postId}/comments":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getFeedPostComments(pathParameters?.postId);
+
+      // Rivals (Feature 6)
+      case "POST /rivals":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await addRival(userId, JSON.parse(body));
+
+      case "GET /rivals":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await getRivals(userId);
+
+      case "DELETE /rivals/{rivalId}":
+        if (!userId) return response(401, { error: "Unauthorized" });
+        return await removeRival(userId, pathParameters?.rivalId);
+
       default:
         return response(404, { error: "Route not found" });
     }
@@ -213,6 +284,21 @@ async function updateProfile(userId, data) {
     updates.push("#avatarUrl = :avatarUrl");
     names["#avatarUrl"] = "avatarUrl";
     values[":avatarUrl"] = data.avatarUrl;
+  }
+  if (data.bio !== undefined) {
+    updates.push("#bio = :bio");
+    names["#bio"] = "bio";
+    values[":bio"] = data.bio;
+  }
+  if (data.coolFact !== undefined) {
+    updates.push("#coolFact = :coolFact");
+    names["#coolFact"] = "coolFact";
+    values[":coolFact"] = data.coolFact;
+  }
+  if (data.description !== undefined) {
+    updates.push("#description = :description");
+    names["#description"] = "description";
+    values[":description"] = data.description;
   }
 
   updates.push("#updatedAt = :updatedAt");
@@ -439,9 +525,16 @@ async function listChallenges(userId) {
     challengeMap[item.challengeId] = item;
   }
 
-  const challenges = Object.values(challengeMap).sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  // Mark completed challenges based on endDate
+  const now = new Date().toISOString();
+  const challenges = Object.values(challengeMap)
+    .map((c) => {
+      if (c.status === "active" && c.endDate && c.endDate < now) {
+        return { ...c, status: "completed" };
+      }
+      return c;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return response(200, { challenges });
 }
@@ -1007,6 +1100,497 @@ async function submitFeedback(userId, data) {
   await addActivity(userId, "feedback", `Submitted ${type}: ${title}`, null);
 
   return response(200, { message: "Feedback submitted successfully" });
+}
+
+// MARK: - Public Challenges & Trophies (Feature 1)
+
+async function getPublicChallenges(userId) {
+  // Get user's trophies to show which are already earned
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const trophies = userResult.Item?.trophies || [];
+  const earnedIds = trophies.map((t) => t.challengeId);
+
+  // Get user's joined public challenges
+  const joinedChallenges = userResult.Item?.joinedPublicChallenges || [];
+
+  const challenges = PUBLIC_CHALLENGES.map((c) => ({
+    ...c,
+    earned: earnedIds.includes(c.id),
+    joined: joinedChallenges.includes(c.id),
+  }));
+
+  return response(200, { challenges });
+}
+
+async function joinPublicChallenge(userId, challengeId) {
+  if (!challengeId) {
+    return response(400, { error: "challengeId is required" });
+  }
+
+  const challenge = PUBLIC_CHALLENGES.find((c) => c.id === challengeId);
+  if (!challenge) {
+    return response(404, { error: "Public challenge not found" });
+  }
+
+  // Add to user's joinedPublicChallenges array
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { userId },
+      UpdateExpression: "SET joinedPublicChallenges = list_append(if_not_exists(joinedPublicChallenges, :empty), :challenge), updatedAt = :now",
+      ExpressionAttributeValues: {
+        ":challenge": [challengeId],
+        ":empty": [],
+        ":now": new Date().toISOString(),
+      },
+    })
+  );
+
+  return response(200, { message: "Joined public challenge", challengeId });
+}
+
+async function checkTrophies(userId) {
+  // Get user's joined public challenges
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const joinedChallenges = userResult.Item?.joinedPublicChallenges || [];
+  const existingTrophies = userResult.Item?.trophies || [];
+  const earnedIds = existingTrophies.map((t) => t.challengeId);
+
+  // Get last 7 days of health snapshots
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const startDate = sevenDaysAgo.toISOString().split("T")[0];
+  const endDate = today.toISOString().split("T")[0];
+
+  const snapshotsResult = await dynamo.send(
+    new QueryCommand({
+      TableName: HEALTH_SNAPSHOTS_TABLE,
+      KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+      ExpressionAttributeNames: { "#d": "date" },
+      ExpressionAttributeValues: {
+        ":userId": userId,
+        ":start": startDate,
+        ":end": endDate,
+      },
+    })
+  );
+
+  const snapshots = snapshotsResult.Items || [];
+  if (snapshots.length === 0) {
+    return response(200, { newTrophies: [], totalTrophies: existingTrophies });
+  }
+
+  // Calculate daily averages for each metric
+  const metricTotals = {};
+  for (const snapshot of snapshots) {
+    const metrics = snapshot.metrics || {};
+    for (const [key, value] of Object.entries(metrics)) {
+      metricTotals[key] = (metricTotals[key] || 0) + (value || 0);
+    }
+  }
+
+  const numDays = snapshots.length;
+  const metricAverages = {};
+  for (const [key, total] of Object.entries(metricTotals)) {
+    metricAverages[key] = total / numDays;
+  }
+
+  // Check which joined challenges are now completed
+  const newTrophies = [];
+  for (const challenge of PUBLIC_CHALLENGES) {
+    // Only check challenges user has joined and hasn't already earned
+    if (!joinedChallenges.includes(challenge.id) || earnedIds.includes(challenge.id)) {
+      continue;
+    }
+
+    const average = metricAverages[challenge.metric] || 0;
+    if (average >= challenge.target) {
+      const trophy = {
+        challengeId: challenge.id,
+        title: challenge.title,
+        tier: challenge.tier,
+        metric: challenge.metric,
+        target: challenge.target,
+        achievedAverage: Math.round(average * 100) / 100,
+        earnedAt: new Date().toISOString(),
+      };
+      newTrophies.push(trophy);
+    }
+  }
+
+  // If there are new trophies, save them
+  if (newTrophies.length > 0) {
+    const allTrophies = [...existingTrophies, ...newTrophies];
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: USERS_TABLE,
+        Key: { userId },
+        UpdateExpression: "SET trophies = :trophies, updatedAt = :now",
+        ExpressionAttributeValues: {
+          ":trophies": allTrophies,
+          ":now": new Date().toISOString(),
+        },
+      })
+    );
+    return response(200, { newTrophies, totalTrophies: allTrophies });
+  }
+
+  return response(200, { newTrophies: [], totalTrophies: existingTrophies });
+}
+
+async function getTrophies(targetUserId) {
+  if (!targetUserId) {
+    return response(400, { error: "userId is required" });
+  }
+
+  const result = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId: targetUserId } })
+  );
+
+  if (!result.Item) {
+    return response(404, { error: "User not found" });
+  }
+
+  return response(200, { trophies: result.Item.trophies || [] });
+}
+
+// MARK: - Feed (Feature 5)
+
+async function createFeedPost(userId, data) {
+  const { type, title, body: postBody, metric, value } = data;
+
+  if (!type || !title) {
+    return response(400, { error: "type and title are required" });
+  }
+
+  const postId = randomUUID();
+  const item = {
+    postId,
+    userId,
+    type,
+    title,
+    body: postBody || null,
+    metric: metric || null,
+    value: value || null,
+    likes: [],
+    commentsCount: 0,
+    timestamp: new Date().toISOString(),
+  };
+
+  await dynamo.send(
+    new PutCommand({
+      TableName: FEED_TABLE,
+      Item: item,
+    })
+  );
+
+  return response(201, item);
+}
+
+async function getFeed(userId) {
+  // Get accepted friends
+  const friendsResult = await dynamo.send(
+    new QueryCommand({
+      TableName: FRIENDSHIPS_TABLE,
+      KeyConditionExpression: "userId = :uid",
+      ExpressionAttributeValues: { ":uid": userId },
+    })
+  );
+
+  const acceptedFriends = (friendsResult.Items || [])
+    .filter((f) => f.status === "accepted")
+    .map((f) => f.friendId);
+
+  // Include user's own posts
+  const allUserIds = [userId, ...acceptedFriends];
+
+  // Get posts from each user via GSI
+  let allPosts = [];
+  for (const uid of allUserIds) {
+    const postsResult = await dynamo.send(
+      new QueryCommand({
+        TableName: FEED_TABLE,
+        IndexName: "userId-index",
+        KeyConditionExpression: "userId = :uid",
+        ExpressionAttributeValues: { ":uid": uid },
+        ScanIndexForward: false,
+        Limit: 10,
+      })
+    );
+    allPosts.push(...(postsResult.Items || []));
+  }
+
+  // Sort by timestamp descending
+  allPosts.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  allPosts = allPosts.slice(0, 50);
+
+  // Enrich with user display names
+  const userCache = {};
+  for (const post of allPosts) {
+    if (!userCache[post.userId]) {
+      const userResult = await dynamo.send(
+        new GetCommand({ TableName: USERS_TABLE, Key: { userId: post.userId } })
+      );
+      userCache[post.userId] = userResult.Item || {};
+    }
+    post.displayName = userCache[post.userId].displayName || "Unknown";
+    post.avatarUrl = userCache[post.userId].avatarUrl || null;
+    post.likesCount = (post.likes || []).length;
+    post.likedByMe = (post.likes || []).includes(userId);
+  }
+
+  return response(200, { posts: allPosts });
+}
+
+async function likeFeedPost(userId, postId) {
+  if (!postId) {
+    return response(400, { error: "postId is required" });
+  }
+
+  // Get the post
+  const result = await dynamo.send(
+    new GetCommand({ TableName: FEED_TABLE, Key: { postId } })
+  );
+
+  if (!result.Item) {
+    return response(404, { error: "Post not found" });
+  }
+
+  const likes = result.Item.likes || [];
+  let updatedLikes;
+
+  if (likes.includes(userId)) {
+    // Unlike
+    updatedLikes = likes.filter((id) => id !== userId);
+  } else {
+    // Like
+    updatedLikes = [...likes, userId];
+  }
+
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: FEED_TABLE,
+      Key: { postId },
+      UpdateExpression: "SET likes = :likes",
+      ExpressionAttributeValues: { ":likes": updatedLikes },
+    })
+  );
+
+  return response(200, { liked: updatedLikes.includes(userId), likesCount: updatedLikes.length });
+}
+
+async function commentOnFeedPost(userId, postId, data) {
+  if (!postId) {
+    return response(400, { error: "postId is required" });
+  }
+  const { text } = data;
+  if (!text) {
+    return response(400, { error: "text is required" });
+  }
+
+  // Get the post to verify it exists
+  const postResult = await dynamo.send(
+    new GetCommand({ TableName: FEED_TABLE, Key: { postId } })
+  );
+
+  if (!postResult.Item) {
+    return response(404, { error: "Post not found" });
+  }
+
+  // Store comment as a sub-item with postId as hash key and commentId as a sort key
+  // We'll store comments in a `comments` list on the feed item
+  const comment = {
+    commentId: randomUUID(),
+    userId,
+    text,
+    timestamp: new Date().toISOString(),
+  };
+
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: FEED_TABLE,
+      Key: { postId },
+      UpdateExpression: "SET comments = list_append(if_not_exists(comments, :empty), :comment), commentsCount = if_not_exists(commentsCount, :zero) + :one",
+      ExpressionAttributeValues: {
+        ":comment": [comment],
+        ":empty": [],
+        ":zero": 0,
+        ":one": 1,
+      },
+    })
+  );
+
+  return response(201, comment);
+}
+
+async function getFeedPostComments(postId) {
+  if (!postId) {
+    return response(400, { error: "postId is required" });
+  }
+
+  const result = await dynamo.send(
+    new GetCommand({ TableName: FEED_TABLE, Key: { postId } })
+  );
+
+  if (!result.Item) {
+    return response(404, { error: "Post not found" });
+  }
+
+  const comments = result.Item.comments || [];
+
+  // Enrich with user display names
+  const userCache = {};
+  for (const comment of comments) {
+    if (!userCache[comment.userId]) {
+      const userResult = await dynamo.send(
+        new GetCommand({ TableName: USERS_TABLE, Key: { userId: comment.userId } })
+      );
+      userCache[comment.userId] = userResult.Item || {};
+    }
+    comment.displayName = userCache[comment.userId].displayName || "Unknown";
+    comment.avatarUrl = userCache[comment.userId].avatarUrl || null;
+  }
+
+  return response(200, { comments });
+}
+
+// MARK: - Rivals (Feature 6)
+
+async function addRival(userId, data) {
+  const { rivalId } = data;
+  if (!rivalId) return response(400, { error: "rivalId is required" });
+  if (rivalId === userId) return response(400, { error: "Cannot rival yourself" });
+
+  // Verify rival user exists
+  const rivalResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId: rivalId } })
+  );
+  if (!rivalResult.Item) {
+    return response(404, { error: "User not found" });
+  }
+
+  // Get current user's rivals
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const currentRivals = userResult.Item?.rivals || [];
+
+  if (currentRivals.includes(rivalId)) {
+    return response(400, { error: "Already a rival" });
+  }
+
+  // Add to rivals array
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { userId },
+      UpdateExpression: "SET rivals = list_append(if_not_exists(rivals, :empty), :rival), updatedAt = :now",
+      ExpressionAttributeValues: {
+        ":rival": [rivalId],
+        ":empty": [],
+        ":now": new Date().toISOString(),
+      },
+    })
+  );
+
+  return response(200, { message: "Rival added", rivalId });
+}
+
+async function getRivals(userId) {
+  // Get user's rivals list
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const rivalIds = userResult.Item?.rivals || [];
+
+  if (rivalIds.length === 0) {
+    return response(200, { rivals: [] });
+  }
+
+  // Get recent stats for each rival
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const startDate = sevenDaysAgo.toISOString().split("T")[0];
+  const endDate = today.toISOString().split("T")[0];
+
+  const rivals = [];
+  for (const rivalId of rivalIds) {
+    const rivalProfile = await dynamo.send(
+      new GetCommand({ TableName: USERS_TABLE, Key: { userId: rivalId } })
+    );
+
+    const snapshotsResult = await dynamo.send(
+      new QueryCommand({
+        TableName: HEALTH_SNAPSHOTS_TABLE,
+        KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+        ExpressionAttributeNames: { "#d": "date" },
+        ExpressionAttributeValues: {
+          ":userId": rivalId,
+          ":start": startDate,
+          ":end": endDate,
+        },
+      })
+    );
+
+    const snapshots = snapshotsResult.Items || [];
+    // Calculate averages
+    const metricTotals = {};
+    for (const snapshot of snapshots) {
+      const metrics = snapshot.metrics || {};
+      for (const [key, value] of Object.entries(metrics)) {
+        metricTotals[key] = (metricTotals[key] || 0) + (value || 0);
+      }
+    }
+    const numDays = snapshots.length || 1;
+    const averages = {};
+    for (const [key, total] of Object.entries(metricTotals)) {
+      averages[key] = Math.round((total / numDays) * 100) / 100;
+    }
+
+    rivals.push({
+      userId: rivalId,
+      displayName: rivalProfile.Item?.displayName || "Unknown",
+      avatarUrl: rivalProfile.Item?.avatarUrl || null,
+      recentAverages: averages,
+      snapshotDays: snapshots.length,
+    });
+  }
+
+  return response(200, { rivals });
+}
+
+async function removeRival(userId, rivalId) {
+  if (!rivalId) return response(400, { error: "rivalId is required" });
+
+  // Get current rivals
+  const userResult = await dynamo.send(
+    new GetCommand({ TableName: USERS_TABLE, Key: { userId } })
+  );
+  const currentRivals = userResult.Item?.rivals || [];
+
+  if (!currentRivals.includes(rivalId)) {
+    return response(400, { error: "Not a rival" });
+  }
+
+  const updatedRivals = currentRivals.filter((id) => id !== rivalId);
+
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { userId },
+      UpdateExpression: "SET rivals = :rivals, updatedAt = :now",
+      ExpressionAttributeValues: {
+        ":rivals": updatedRivals,
+        ":now": new Date().toISOString(),
+      },
+    })
+  );
+
+  return response(200, { message: "Rival removed", rivalId });
 }
 
 // MARK: - Helpers

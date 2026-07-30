@@ -41,6 +41,12 @@
 		E51000032 /* MetricDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000034 /* MetricDetailView.swift */; };
 		E51000033 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000035 /* GoalsView.swift */; };
 		E51000034 /* FeedComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000036 /* FeedComingSoonView.swift */; };
+		E51000035 /* PublicChallengesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000037 /* PublicChallengesView.swift */; };
+		E51000036 /* TrophiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000038 /* TrophiesView.swift */; };
+		E51000037 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000039 /* FeedView.swift */; };
+		E51000038 /* CommentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5200003A /* CommentsView.swift */; };
+		E51000039 /* RivalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5200003B /* RivalsView.swift */; };
+		E5100003A /* FeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5200003C /* FeedViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -80,6 +86,12 @@
 		E52000034 /* MetricDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricDetailView.swift; sourceTree = "<group>"; };
 		E52000035 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
 		E52000036 /* FeedComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedComingSoonView.swift; sourceTree = "<group>"; };
+		E52000037 /* PublicChallengesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicChallengesView.swift; sourceTree = "<group>"; };
+		E52000038 /* TrophiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrophiesView.swift; sourceTree = "<group>"; };
+		E52000039 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
+		E5200003A /* CommentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentsView.swift; sourceTree = "<group>"; };
+		E5200003B /* RivalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RivalsView.swift; sourceTree = "<group>"; };
+		E5200003C /* FeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -135,6 +147,11 @@
 				E52000034 /* MetricDetailView.swift */,
 				E52000035 /* GoalsView.swift */,
 				E52000036 /* FeedComingSoonView.swift */,
+				E52000037 /* PublicChallengesView.swift */,
+				E52000038 /* TrophiesView.swift */,
+				E52000039 /* FeedView.swift */,
+				E5200003A /* CommentsView.swift */,
+				E5200003B /* RivalsView.swift */,
 				E52000005 /* InsightsView.swift */,
 				E52000006 /* CommunityView.swift */,
 				E52000007 /* ProfileView.swift */,
@@ -197,6 +214,7 @@
 				E52000022 /* LeaderboardViewModel.swift */,
 				E52000024 /* ChallengesViewModel.swift */,
 				E52000026 /* FriendsViewModel.swift */,
+				E5200003C /* FeedViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -314,6 +332,12 @@
 				E51000032 /* MetricDetailView.swift in Sources */,
 				E51000033 /* GoalsView.swift in Sources */,
 				E51000034 /* FeedComingSoonView.swift in Sources */,
+				E51000035 /* PublicChallengesView.swift in Sources */,
+				E51000036 /* TrophiesView.swift in Sources */,
+				E51000037 /* FeedView.swift in Sources */,
+				E51000038 /* CommentsView.swift in Sources */,
+				E51000039 /* RivalsView.swift in Sources */,
+				E5100003A /* FeedViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
