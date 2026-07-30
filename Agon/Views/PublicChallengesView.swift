@@ -57,6 +57,29 @@ struct PublicChallengesView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Week header and description
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundStyle(Color.agonAccent)
+                        Text("Week \(currentWeekNumber), \(currentYear)")
+                            .font(.headline)
+                            .foregroundStyle(Color.agonTextPrimary)
+                        Spacer()
+                        Text(weekDateRange)
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+
+                    Text("Public challenges reset every Monday. Maintain a daily average at or above the target throughout the calendar week to earn a trophy. Join at any point - your average is calculated from Monday. Trophies stack - see how many weeks you've achieved each one on your profile!")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding()
+                .background(Color.agonSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 if isLoading {
                     ProgressView("Loading challenges...")
                         .frame(maxWidth: .infinity, minHeight: 200)
@@ -96,6 +119,28 @@ struct PublicChallengesView: View {
         .refreshable {
             await loadChallenges()
         }
+    }
+
+    // MARK: - Week Info
+
+    private var currentWeekNumber: Int {
+        Calendar.current.component(.weekOfYear, from: Date())
+    }
+
+    private var currentYear: Int {
+        Calendar.current.component(.year, from: Date())
+    }
+
+    private var weekDateRange: String {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let sunday = calendar.date(byAdding: .day, value: 6, to: monday)!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "\(formatter.string(from: monday)) - \(formatter.string(from: sunday))"
     }
 
     // MARK: - Category Section
