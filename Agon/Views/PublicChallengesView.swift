@@ -57,6 +57,29 @@ struct PublicChallengesView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Week header and description
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundStyle(Color.agonAccent)
+                        Text("Week \(currentWeekNumber), \(String(currentYear))")
+                            .font(.headline)
+                            .foregroundStyle(Color.agonTextPrimary)
+                        Spacer()
+                        Text(weekDateRange)
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                    }
+
+                    Text("Public challenges reset every Monday. Maintain a daily average at or above the target throughout the calendar week to earn a trophy. Join at any point - your average is calculated from Monday. Trophies stack - see how many weeks you've achieved each one on your profile!")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding()
+                .background(Color.agonSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 if isLoading {
                     ProgressView("Loading challenges...")
                         .frame(maxWidth: .infinity, minHeight: 200)
@@ -96,6 +119,28 @@ struct PublicChallengesView: View {
         .refreshable {
             await loadChallenges()
         }
+    }
+
+    // MARK: - Week Info
+
+    private var currentWeekNumber: Int {
+        Calendar.current.component(.weekOfYear, from: Date())
+    }
+
+    private var currentYear: Int {
+        Calendar.current.component(.year, from: Date())
+    }
+
+    private var weekDateRange: String {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let daysSinceMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today)!
+        let sunday = calendar.date(byAdding: .day, value: 6, to: monday)!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "\(formatter.string(from: monday)) - \(formatter.string(from: sunday))"
     }
 
     // MARK: - Category Section
@@ -227,30 +272,70 @@ struct PublicChallengesView: View {
 
         do {
             let raw = try await APIService.shared.getPublicChallenges()
-            challenges = raw.compactMap { dict -> PublicChallenge? in
-                guard let id = dict["id"] as? String ?? dict["challengeId"] as? String,
-                      let name = dict["name"] as? String,
-                      let category = dict["category"] as? String,
-                      let metric = dict["metric"] as? String else { return nil }
 
-                let bronze = (dict["bronzeTarget"] as? Double) ?? Double((dict["bronzeTarget"] as? Int) ?? 0)
-                let silver = (dict["silverTarget"] as? Double) ?? Double((dict["silverTarget"] as? Int) ?? 0)
-                let gold = (dict["goldTarget"] as? Double) ?? Double((dict["goldTarget"] as? Int) ?? 0)
-                let joined = dict["joined"] as? Bool ?? false
-                let progress = (dict["progress"] as? Double) ?? Double((dict["progress"] as? Int) ?? 0)
+            // API returns individual challenges per tier - group by metric
+            var grouped: [String: (bronze: [String: Any]?, silver: [String: Any]?, gold: [String: Any]?)] = [:]
+
+            for dict in raw {
+                guard let metric = dict["metric"] as? String,
+                      let tier = dict["tier"] as? String else { continue }
+
+                if grouped[metric] == nil {
+                    grouped[metric] = (bronze: nil, silver: nil, gold: nil)
+                }
+                switch tier {
+                case "bronze": grouped[metric]?.bronze = dict
+                case "silver": grouped[metric]?.silver = dict
+                case "gold": grouped[metric]?.gold = dict
+                default: break
+                }
+            }
+
+            let categoryMap: [String: String] = [
+                "steps": "walking",
+                "distanceWalked": "distance",
+                "totalSleep": "sleep",
+                "distanceRan": "running",
+                "timeInDaylight": "sun"
+            ]
+
+            challenges = grouped.compactMap { metric, tiers -> PublicChallenge? in
+                let bronze = tiers.bronze
+                let silver = tiers.silver
+                let gold = tiers.gold
+
+                let bronzeTarget = (bronze?["target"] as? Double) ?? Double((bronze?["target"] as? Int) ?? 0)
+                let silverTarget = (silver?["target"] as? Double) ?? Double((silver?["target"] as? Int) ?? 0)
+                let goldTarget = (gold?["target"] as? Double) ?? Double((gold?["target"] as? Int) ?? 0)
+                let joined = (bronze?["joined"] as? Bool) ?? (silver?["joined"] as? Bool) ?? (gold?["joined"] as? Bool) ?? false
+                let progress = (bronze?["progress"] as? Double) ?? Double((bronze?["progress"] as? Int) ?? 0)
+
+                let name: String
+                switch metric {
+                case "steps": name = "Walker"
+                case "distanceWalked": name = "Hiker"
+                case "totalSleep": name = "Sleeper"
+                case "distanceRan": name = "Runner"
+                case "timeInDaylight": name = "Sun Seeker"
+                default: name = metric
+                }
 
                 return PublicChallenge(
-                    id: id,
+                    id: metric,
                     name: name,
-                    category: category,
+                    category: categoryMap[metric] ?? "walking",
                     metric: metric,
-                    bronzeTarget: bronze,
-                    silverTarget: silver,
-                    goldTarget: gold,
+                    bronzeTarget: bronzeTarget,
+                    silverTarget: silverTarget,
+                    goldTarget: goldTarget,
                     joined: joined,
                     progress: progress
                 )
-            }
+            }.sorted { $0.category < $1.category }
+        } catch is CancellationError {
+            // Ignore
+        } catch let error as NSError where error.code == -999 {
+            // Ignore cancelled requests
         } catch {
             errorMessage = "Failed to load challenges"
             print("Public challenges error: \(error)")
@@ -262,8 +347,25 @@ struct PublicChallengesView: View {
     private func joinChallenge(_ challenge: PublicChallenge) async {
         joiningId = challenge.id
 
+        // Join all three tiers for this metric
+        let tierPrefixes: [String: String] = [
+            "steps": "walker",
+            "distanceWalked": "hiker",
+            "totalSleep": "sleeper",
+            "distanceRan": "runner",
+            "timeInDaylight": "sun"
+        ]
+
+        guard let prefix = tierPrefixes[challenge.metric] else {
+            errorMessage = "Failed to join challenge"
+            joiningId = nil
+            return
+        }
+
         do {
-            try await APIService.shared.joinPublicChallenge(id: challenge.id)
+            try await APIService.shared.joinPublicChallenge(id: "bronze-\(prefix)")
+            try await APIService.shared.joinPublicChallenge(id: "silver-\(prefix)")
+            try await APIService.shared.joinPublicChallenge(id: "gold-\(prefix)")
             if let index = challenges.firstIndex(where: { $0.id == challenge.id }) {
                 challenges[index].joined = true
             }

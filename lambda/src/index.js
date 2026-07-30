@@ -1115,10 +1115,47 @@ async function getPublicChallenges(userId) {
   // Get user's joined public challenges
   const joinedChallenges = userResult.Item?.joinedPublicChallenges || [];
 
+  // Calculate current week progress
+  const today = new Date();
+  const dayOfWeek = today.getUTCDay();
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000);
+  const startDate = monday.toISOString().split("T")[0];
+  const endDate = today.toISOString().split("T")[0];
+
+  let metricAverages = {};
+  const snapshotsResult = await dynamo.send(
+    new QueryCommand({
+      TableName: HEALTH_SNAPSHOTS_TABLE,
+      KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+      ExpressionAttributeNames: { "#d": "date" },
+      ExpressionAttributeValues: {
+        ":userId": userId,
+        ":start": startDate,
+        ":end": endDate,
+      },
+    })
+  );
+
+  const snapshots = snapshotsResult.Items || [];
+  if (snapshots.length > 0) {
+    const metricTotals = {};
+    for (const snapshot of snapshots) {
+      const metrics = snapshot.metrics || {};
+      for (const [key, value] of Object.entries(metrics)) {
+        metricTotals[key] = (metricTotals[key] || 0) + (value || 0);
+      }
+    }
+    for (const [key, total] of Object.entries(metricTotals)) {
+      metricAverages[key] = total / snapshots.length;
+    }
+  }
+
   const challenges = PUBLIC_CHALLENGES.map((c) => ({
     ...c,
     earned: earnedIds.includes(c.id),
     joined: joinedChallenges.includes(c.id),
+    progress: Math.round((metricAverages[c.metric] || 0) * 100) / 100,
   }));
 
   return response(200, { challenges });
@@ -1158,13 +1195,25 @@ async function checkTrophies(userId) {
   );
   const joinedChallenges = userResult.Item?.joinedPublicChallenges || [];
   const existingTrophies = userResult.Item?.trophies || [];
-  const earnedIds = existingTrophies.map((t) => t.challengeId);
 
-  // Get last 7 days of health snapshots
+  // Calculate current calendar week (Mon-Sun)
   const today = new Date();
-  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const startDate = sevenDaysAgo.toISOString().split("T")[0];
+  const dayOfWeek = today.getUTCDay(); // 0=Sun, 1=Mon...
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000);
+  const startDate = monday.toISOString().split("T")[0];
   const endDate = today.toISOString().split("T")[0];
+
+  // Get week number and year
+  const startOfYear = new Date(today.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil(((today - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  const year = today.getFullYear();
+  const weekId = `${year}-W${weekNumber}`;
+
+  // Check which trophies already earned THIS week
+  const earnedThisWeek = existingTrophies
+    .filter((t) => t.weekId === weekId)
+    .map((t) => t.challengeId);
 
   const snapshotsResult = await dynamo.send(
     new QueryCommand({
@@ -1181,7 +1230,7 @@ async function checkTrophies(userId) {
 
   const snapshots = snapshotsResult.Items || [];
   if (snapshots.length === 0) {
-    return response(200, { newTrophies: [], totalTrophies: existingTrophies });
+    return response(200, { newTrophies: [], totalTrophies: existingTrophies, weekId });
   }
 
   // Calculate daily averages for each metric
@@ -1199,13 +1248,31 @@ async function checkTrophies(userId) {
     metricAverages[key] = total / numDays;
   }
 
-  // Check which joined challenges are now completed
+  // Check which joined challenges are now completed THIS week
   const newTrophies = [];
   for (const challenge of PUBLIC_CHALLENGES) {
-    // Only check challenges user has joined and hasn't already earned
-    if (!joinedChallenges.includes(challenge.id) || earnedIds.includes(challenge.id)) {
+    // Only check challenges user has joined and hasn't already earned THIS WEEK
+    if (!joinedChallenges.includes(challenge.id) || earnedThisWeek.includes(challenge.id)) {
       continue;
     }
+
+    const average = metricAverages[challenge.metric] || 0;
+    if (average >= challenge.target) {
+      const trophy = {
+        challengeId: challenge.id,
+        title: challenge.title,
+        tier: challenge.tier,
+        metric: challenge.metric,
+        target: challenge.target,
+        achievedAverage: Math.round(average * 100) / 100,
+        earnedAt: new Date().toISOString(),
+        weekId,
+        weekNumber,
+        year,
+      };
+      newTrophies.push(trophy);
+    }
+  }
 
     const average = metricAverages[challenge.metric] || 0;
     if (average >= challenge.target) {
