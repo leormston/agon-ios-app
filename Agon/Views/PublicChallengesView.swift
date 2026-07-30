@@ -132,7 +132,7 @@ struct PublicChallengesView: View {
             .padding()
         }
         .background(Color.agonBackground)
-        .navigationTitle("Public Challenges")
+        .navigationTitle("Weekly Challenges")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadChallenges()

@@ -30,7 +30,7 @@ struct ChallengesView: View {
                     } label: {
                         HStack {
                             Image(systemName: "globe")
-                            Text("Public")
+                            Text("Weekly")
                                 .font(.subheadline.bold())
                         }
                         .frame(maxWidth: .infinity)
