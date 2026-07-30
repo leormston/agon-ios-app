@@ -227,30 +227,69 @@ struct PublicChallengesView: View {
 
         do {
             let raw = try await APIService.shared.getPublicChallenges()
-            challenges = raw.compactMap { dict -> PublicChallenge? in
-                guard let id = dict["id"] as? String ?? dict["challengeId"] as? String,
-                      let name = dict["name"] as? String,
-                      let category = dict["category"] as? String,
-                      let metric = dict["metric"] as? String else { return nil }
 
-                let bronze = (dict["bronzeTarget"] as? Double) ?? Double((dict["bronzeTarget"] as? Int) ?? 0)
-                let silver = (dict["silverTarget"] as? Double) ?? Double((dict["silverTarget"] as? Int) ?? 0)
-                let gold = (dict["goldTarget"] as? Double) ?? Double((dict["goldTarget"] as? Int) ?? 0)
-                let joined = dict["joined"] as? Bool ?? false
-                let progress = (dict["progress"] as? Double) ?? Double((dict["progress"] as? Int) ?? 0)
+            // API returns individual challenges per tier - group by metric
+            var grouped: [String: (bronze: [String: Any]?, silver: [String: Any]?, gold: [String: Any]?)] = [:]
+
+            for dict in raw {
+                guard let metric = dict["metric"] as? String,
+                      let tier = dict["tier"] as? String else { continue }
+
+                if grouped[metric] == nil {
+                    grouped[metric] = (bronze: nil, silver: nil, gold: nil)
+                }
+                switch tier {
+                case "bronze": grouped[metric]?.bronze = dict
+                case "silver": grouped[metric]?.silver = dict
+                case "gold": grouped[metric]?.gold = dict
+                default: break
+                }
+            }
+
+            let categoryMap: [String: String] = [
+                "steps": "walking",
+                "distanceWalked": "distance",
+                "totalSleep": "sleep",
+                "distanceRan": "running",
+                "timeInDaylight": "sun"
+            ]
+
+            challenges = grouped.compactMap { metric, tiers -> PublicChallenge? in
+                let bronze = tiers.bronze
+                let silver = tiers.silver
+                let gold = tiers.gold
+
+                let bronzeTarget = (bronze?["target"] as? Double) ?? Double((bronze?["target"] as? Int) ?? 0)
+                let silverTarget = (silver?["target"] as? Double) ?? Double((silver?["target"] as? Int) ?? 0)
+                let goldTarget = (gold?["target"] as? Double) ?? Double((gold?["target"] as? Int) ?? 0)
+                let joined = (bronze?["joined"] as? Bool) ?? (silver?["joined"] as? Bool) ?? (gold?["joined"] as? Bool) ?? false
+
+                let name: String
+                switch metric {
+                case "steps": name = "Walker"
+                case "distanceWalked": name = "Hiker"
+                case "totalSleep": name = "Sleeper"
+                case "distanceRan": name = "Runner"
+                case "timeInDaylight": name = "Sun Seeker"
+                default: name = metric
+                }
 
                 return PublicChallenge(
-                    id: id,
+                    id: metric,
                     name: name,
-                    category: category,
+                    category: categoryMap[metric] ?? "walking",
                     metric: metric,
-                    bronzeTarget: bronze,
-                    silverTarget: silver,
-                    goldTarget: gold,
+                    bronzeTarget: bronzeTarget,
+                    silverTarget: silverTarget,
+                    goldTarget: goldTarget,
                     joined: joined,
-                    progress: progress
+                    progress: 0
                 )
-            }
+            }.sorted { $0.category < $1.category }
+        } catch is CancellationError {
+            // Ignore
+        } catch let error as NSError where error.code == -999 {
+            // Ignore cancelled requests
         } catch {
             errorMessage = "Failed to load challenges"
             print("Public challenges error: \(error)")
