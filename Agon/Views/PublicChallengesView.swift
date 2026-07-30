@@ -94,8 +94,29 @@ struct PublicChallengesView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 200)
                 } else {
+                    // Joined challenges first
+                    let joinedChallenges = challenges.filter { $0.joined }
+                    let unjoinedChallenges = challenges.filter { !$0.joined }
+
+                    if !joinedChallenges.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "star.fill")
+                                    .foregroundStyle(Color.agonAccent)
+                                Text("Your Challenges")
+                                    .font(.headline)
+                                    .foregroundStyle(Color.agonTextPrimary)
+                                Spacer()
+                            }
+                            ForEach(joinedChallenges) { challenge in
+                                publicChallengeCard(challenge)
+                            }
+                        }
+                    }
+
+                    // Remaining by category
                     ForEach(PublicChallengeCategory.allCases, id: \.rawValue) { category in
-                        let categoryChallenges = challenges.filter { $0.categoryType == category }
+                        let categoryChallenges = unjoinedChallenges.filter { $0.categoryType == category }
                         if !categoryChallenges.isEmpty {
                             categorySection(category: category, challenges: categoryChallenges)
                         }
@@ -170,6 +191,10 @@ struct PublicChallengesView: View {
                 .font(.subheadline.bold())
                 .foregroundStyle(Color.agonTextPrimary)
 
+            Text(descriptionForChallenge(challenge))
+                .font(.caption)
+                .foregroundStyle(Color.agonTextSecondary)
+
             // Trophy tiers
             HStack(spacing: 16) {
                 trophyTier(label: "Bronze", target: challenge.bronzeTarget, unit: challenge.metricUnit, color: Color(red: 205/255, green: 127/255, blue: 50/255))
@@ -238,6 +263,23 @@ struct PublicChallengesView: View {
     }
 
     // MARK: - Helpers
+
+    private func descriptionForChallenge(_ challenge: PublicChallenge) -> String {
+        switch challenge.metric {
+        case "steps":
+            return "Hit a daily step average this week. Walk more, earn trophies."
+        case "distanceWalked":
+            return "Average a set distance walked per day this week."
+        case "totalSleep":
+            return "Maintain a healthy sleep average every night this week."
+        case "distanceRan":
+            return "Keep up a daily running distance average this week."
+        case "timeInDaylight":
+            return "Spend time outdoors - average daily minutes in the sun this week."
+        default:
+            return "Hit the daily average target for the full calendar week."
+        }
+    }
 
     private func formatTarget(_ value: Double, unit: String) -> String {
         if unit == "km" || unit == "hrs" {
