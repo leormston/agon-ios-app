@@ -562,6 +562,10 @@ async function joinChallenge(userId, challengeId) {
     return response(400, { error: "Already a participant" });
   }
 
+  if (challenge.participants.length >= 10) {
+    return response(400, { error: "Challenge is full (max 10 participants)" });
+  }
+
   if (challenge.status !== "active") {
     return response(400, { error: "Challenge is not active" });
   }

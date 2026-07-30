@@ -240,12 +240,26 @@ struct ActiveChallengeCard: View {
                             .font(.headline)
                             .foregroundStyle(Color.agonTextPrimary)
                     }
-                    Text("\(challenge.participants.count) participants • \(challenge.daysRemaining) days left")
+                    Text("\(min(challenge.participants.count, 10))/10 participants - \(challenge.daysRemaining) days left")
                         .font(.caption)
                         .foregroundStyle(Color.agonTextSecondary)
                 }
                 Spacer()
-                CircularProgressView(progress: progressForChallenge(challenge))
+            }
+
+            // Progress bar (same style as weekly)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Progress")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonTextSecondary)
+                    Spacer()
+                    Text("\(Int(progressForChallenge(challenge) * 100))%")
+                        .font(.caption.bold())
+                        .foregroundStyle(Color.agonAccent)
+                }
+                ProgressView(value: progressForChallenge(challenge))
+                    .tint(Color.agonAccent)
             }
 
             // Race track progress bar
