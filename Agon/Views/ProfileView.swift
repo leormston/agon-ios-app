@@ -236,7 +236,7 @@ struct ProfileView: View {
                 }
             } else {
                 if bio.isEmpty && coolFact.isEmpty && profileDescription.isEmpty {
-                    Text("Tap Edit to add your bio, cool fact, and description")
+                    Text("Tap Edit to add your bio, cool fact, and health goals")
                         .font(.caption)
                         .foregroundStyle(Color.agonTextSecondary)
                 } else {
@@ -248,7 +248,7 @@ struct ProfileView: View {
                             flairDisplay(label: "Cool Fact", value: coolFact)
                         }
                         if !profileDescription.isEmpty {
-                            flairDisplay(label: "Description", value: profileDescription)
+                            flairDisplay(label: "Health Goals", value: profileDescription)
                         }
                     }
                 }

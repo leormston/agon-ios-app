@@ -52,7 +52,7 @@ struct FriendProfileView: View {
                                     flairRow(label: "Cool Fact", value: coolFact)
                                 }
                                 if let desc = profile?["description"] as? String, !desc.isEmpty {
-                                    flairRow(label: "About", value: desc)
+                                    flairRow(label: "Health Goals", value: desc)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
