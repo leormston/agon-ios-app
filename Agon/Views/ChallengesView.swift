@@ -129,7 +129,7 @@ struct ChallengesView: View {
             } else {
                 ForEach(viewModel.activeChallenges) { challenge in
                     NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
-                        ActiveChallengeCard(challenge: challenge)
+                        ActiveChallengeCard(challenge: challenge, position: viewModel.challengePositions[challenge.id])
                     }
                     .buttonStyle(.plain)
                 }
@@ -226,6 +226,7 @@ enum ChallengeCategory: CaseIterable {
 
 struct ActiveChallengeCard: View {
     let challenge: Challenge
+    var position: Int? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -253,9 +254,14 @@ struct ActiveChallengeCard: View {
                     Image(systemName: "trophy")
                         .font(.caption)
                         .foregroundStyle(Color.agonAccent)
-                    Text("Position: -")
-                        .font(.caption.bold())
-                        .foregroundStyle(Color.agonTextPrimary)
+                    if let pos = position {
+                        Text("#\(pos) of \(challenge.participants.count)")
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.agonTextPrimary)
+                    } else {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                    }
                 }
                 Spacer()
                 HStack(spacing: 4) {

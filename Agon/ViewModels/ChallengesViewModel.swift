@@ -10,6 +10,7 @@ final class ChallengesViewModel: ObservableObject {
     @Published var completedChallenges: [Challenge] = []
     @Published var wonChallenges: [Challenge] = []
     @Published var lostChallenges: [Challenge] = []
+    @Published var challengePositions: [String: Int] = [:]
     @Published var friends: [FriendEntry] = []
     @Published var isLoading = false
     @Published var isCreating = false
@@ -60,6 +61,9 @@ final class ChallengesViewModel: ObservableObject {
             wonChallenges = won
             lostChallenges = lost
             errorMessage = nil
+
+            // Fetch positions for active challenges in parallel
+            await loadPositions(for: active, userId: currentUserId)
         } catch is CancellationError {
             // Ignore - task was cancelled by SwiftUI (e.g. view disappeared)
         } catch let error as NSError where error.code == -999 {
@@ -149,6 +153,36 @@ final class ChallengesViewModel: ObservableObject {
             participants: participants,
             createdAt: createdAt
         )
+    }
+
+    // MARK: - Positions
+
+    private func loadPositions(for challenges: [Challenge], userId: String) async {
+        await withTaskGroup(of: (String, Int?).self) { group in
+            for challenge in challenges {
+                group.addTask {
+                    do {
+                        guard let data = try await APIService.shared.getChallengeDetails(challengeId: challenge.id) else {
+                            return (challenge.id, nil)
+                        }
+                        if let scores = data["scores"] as? [[String: Any]] {
+                            for (index, score) in scores.enumerated() {
+                                if (score["userId"] as? String) == userId {
+                                    return (challenge.id, index + 1)
+                                }
+                            }
+                        }
+                    } catch {}
+                    return (challenge.id, nil)
+                }
+            }
+
+            for await (challengeId, position) in group {
+                if let pos = position {
+                    challengePositions[challengeId] = pos
+                }
+            }
+        }
     }
 
     // MARK: - Friends
