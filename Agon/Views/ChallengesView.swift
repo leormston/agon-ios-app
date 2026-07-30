@@ -8,7 +8,7 @@ struct ChallengesView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Top buttons
+                // Top buttons - Create and Join
                 HStack(spacing: 10) {
                     Button {
                         showCreateChallenge = true
@@ -30,7 +30,7 @@ struct ChallengesView: View {
                     } label: {
                         HStack {
                             Image(systemName: "globe")
-                            Text("Agon Weekly")
+                            Text("Join")
                                 .font(.subheadline.bold())
                         }
                         .frame(maxWidth: .infinity)
@@ -43,6 +43,17 @@ struct ChallengesView: View {
                                 .stroke(Color.agonBorder, lineWidth: 1)
                         )
                     }
+                }
+
+                // Active limit info
+                if viewModel.activeChallenges.count >= 7 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.circle")
+                            .font(.caption)
+                        Text("Max 7 active challenges reached")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(Color.agonTextSecondary)
                 }
 
                 // Category pills
@@ -68,6 +79,9 @@ struct ChallengesView: View {
                 switch selectedCategory {
                 case .active:
                     activeSection
+
+                    // Agon Weekly joined challenges underneath
+                    agonWeeklySection
                 case .completed:
                     completedSection
                 case .won:
@@ -76,7 +90,7 @@ struct ChallengesView: View {
                     lostSection
                 }
 
-                // Invited Challenges (always show if any)
+                // Invited Challenges
                 if selectedCategory == .active && !viewModel.invitedChallenges.isEmpty {
                     SectionHeader(title: "Join a Challenge", icon: "plus.circle.fill")
 
@@ -134,6 +148,35 @@ struct ChallengesView: View {
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+
+    // MARK: - Agon Weekly Section
+
+    private var agonWeeklySection: some View {
+        Group {
+            SectionHeader(title: "Agon Weekly", icon: "globe")
+
+            NavigationLink(destination: PublicChallengesView()) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Weekly challenges reset every Monday")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+                        Text("Tap to view and join challenges")
+                            .font(.caption)
+                            .foregroundStyle(Color.agonAccent)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonTextSecondary)
+                }
+                .padding()
+                .background(Color.agonSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
         }
     }
 

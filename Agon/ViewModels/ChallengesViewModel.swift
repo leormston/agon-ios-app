@@ -84,6 +84,11 @@ final class ChallengesViewModel: ObservableObject {
     // MARK: - Create Challenge
 
     func createChallenge(metric: ChallengeMetric, duration: ChallengeDuration, invitedUserIds: [String]) async -> Bool {
+        if activeChallenges.count >= 7 {
+            errorMessage = "Max 7 active challenges. Complete or leave one first."
+            return false
+        }
+
         isCreating = true
         errorMessage = nil
 
