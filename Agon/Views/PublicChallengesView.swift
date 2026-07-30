@@ -301,8 +301,25 @@ struct PublicChallengesView: View {
     private func joinChallenge(_ challenge: PublicChallenge) async {
         joiningId = challenge.id
 
+        // Join all three tiers for this metric
+        let tierPrefixes: [String: String] = [
+            "steps": "walker",
+            "distanceWalked": "hiker",
+            "totalSleep": "sleeper",
+            "distanceRan": "runner",
+            "timeInDaylight": "sun"
+        ]
+
+        guard let prefix = tierPrefixes[challenge.metric] else {
+            errorMessage = "Failed to join challenge"
+            joiningId = nil
+            return
+        }
+
         do {
-            try await APIService.shared.joinPublicChallenge(id: challenge.id)
+            try await APIService.shared.joinPublicChallenge(id: "bronze-\(prefix)")
+            try await APIService.shared.joinPublicChallenge(id: "silver-\(prefix)")
+            try await APIService.shared.joinPublicChallenge(id: "gold-\(prefix)")
             if let index = challenges.firstIndex(where: { $0.id == challenge.id }) {
                 challenges[index].joined = true
             }
