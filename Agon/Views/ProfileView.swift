@@ -232,7 +232,7 @@ struct ProfileView: View {
                 VStack(spacing: 10) {
                     flairField(label: "Bio", text: $bio, placeholder: "Tell people about yourself...")
                     flairField(label: "Cool Fact", text: $coolFact, placeholder: "Something interesting about you...")
-                    flairField(label: "Description", text: $profileDescription, placeholder: "What are your fitness goals?")
+                    flairField(label: "Health Goals", text: $profileDescription, placeholder: "What are your fitness goals?")
                 }
             } else {
                 if bio.isEmpty && coolFact.isEmpty && profileDescription.isEmpty {
