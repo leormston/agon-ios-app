@@ -261,9 +261,6 @@ struct ActiveChallengeCard: View {
                 ProgressView(value: progressForChallenge(challenge))
                     .tint(Color.agonAccent)
             }
-
-            // Race track progress bar
-            RaceTrackProgressBar(challenge: challenge)
         }
         .padding()
         .background(Color.agonSurface)
