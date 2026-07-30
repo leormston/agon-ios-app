@@ -247,19 +247,22 @@ struct ActiveChallengeCard: View {
                 Spacer()
             }
 
-            // Progress bar - time remaining
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Day \(daysElapsed(challenge)) of \(totalDays(challenge))")
+            // Leaderboard position and stat
+            HStack {
+                HStack(spacing: 4) {
+                    Image(systemName: "trophy")
+                        .font(.caption)
+                        .foregroundStyle(Color.agonAccent)
+                    Text("Position: -")
+                        .font(.caption.bold())
+                        .foregroundStyle(Color.agonTextPrimary)
+                }
+                Spacer()
+                HStack(spacing: 4) {
+                    Text("\(challenge.daysRemaining) days left")
                         .font(.caption)
                         .foregroundStyle(Color.agonTextSecondary)
-                    Spacer()
-                    Text("\(challenge.daysRemaining) days left")
-                        .font(.caption.bold())
-                        .foregroundStyle(Color.agonAccent)
                 }
-                ProgressView(value: progressForChallenge(challenge))
-                    .tint(Color.agonAccent)
             }
         }
         .padding()
