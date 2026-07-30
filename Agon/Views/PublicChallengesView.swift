@@ -62,7 +62,7 @@ struct PublicChallengesView: View {
                     HStack {
                         Image(systemName: "calendar")
                             .foregroundStyle(Color.agonAccent)
-                        Text("Week \(currentWeekNumber), \(currentYear)")
+                        Text("Week \(currentWeekNumber), \(String(currentYear))")
                             .font(.headline)
                             .foregroundStyle(Color.agonTextPrimary)
                         Spacer()
