@@ -1115,10 +1115,47 @@ async function getPublicChallenges(userId) {
   // Get user's joined public challenges
   const joinedChallenges = userResult.Item?.joinedPublicChallenges || [];
 
+  // Calculate current week progress
+  const today = new Date();
+  const dayOfWeek = today.getUTCDay();
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000);
+  const startDate = monday.toISOString().split("T")[0];
+  const endDate = today.toISOString().split("T")[0];
+
+  let metricAverages = {};
+  const snapshotsResult = await dynamo.send(
+    new QueryCommand({
+      TableName: HEALTH_SNAPSHOTS_TABLE,
+      KeyConditionExpression: "userId = :userId AND #d BETWEEN :start AND :end",
+      ExpressionAttributeNames: { "#d": "date" },
+      ExpressionAttributeValues: {
+        ":userId": userId,
+        ":start": startDate,
+        ":end": endDate,
+      },
+    })
+  );
+
+  const snapshots = snapshotsResult.Items || [];
+  if (snapshots.length > 0) {
+    const metricTotals = {};
+    for (const snapshot of snapshots) {
+      const metrics = snapshot.metrics || {};
+      for (const [key, value] of Object.entries(metrics)) {
+        metricTotals[key] = (metricTotals[key] || 0) + (value || 0);
+      }
+    }
+    for (const [key, total] of Object.entries(metricTotals)) {
+      metricAverages[key] = total / snapshots.length;
+    }
+  }
+
   const challenges = PUBLIC_CHALLENGES.map((c) => ({
     ...c,
     earned: earnedIds.includes(c.id),
     joined: joinedChallenges.includes(c.id),
+    progress: Math.round((metricAverages[c.metric] || 0) * 100) / 100,
   }));
 
   return response(200, { challenges });

@@ -308,6 +308,7 @@ struct PublicChallengesView: View {
                 let silverTarget = (silver?["target"] as? Double) ?? Double((silver?["target"] as? Int) ?? 0)
                 let goldTarget = (gold?["target"] as? Double) ?? Double((gold?["target"] as? Int) ?? 0)
                 let joined = (bronze?["joined"] as? Bool) ?? (silver?["joined"] as? Bool) ?? (gold?["joined"] as? Bool) ?? false
+                let progress = (bronze?["progress"] as? Double) ?? Double((bronze?["progress"] as? Int) ?? 0)
 
                 let name: String
                 switch metric {
@@ -328,7 +329,7 @@ struct PublicChallengesView: View {
                     silverTarget: silverTarget,
                     goldTarget: goldTarget,
                     joined: joined,
-                    progress: 0
+                    progress: progress
                 )
             }.sorted { $0.category < $1.category }
         } catch is CancellationError {
