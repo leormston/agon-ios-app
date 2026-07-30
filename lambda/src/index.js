@@ -1274,21 +1274,6 @@ async function checkTrophies(userId) {
     }
   }
 
-    const average = metricAverages[challenge.metric] || 0;
-    if (average >= challenge.target) {
-      const trophy = {
-        challengeId: challenge.id,
-        title: challenge.title,
-        tier: challenge.tier,
-        metric: challenge.metric,
-        target: challenge.target,
-        achievedAverage: Math.round(average * 100) / 100,
-        earnedAt: new Date().toISOString(),
-      };
-      newTrophies.push(trophy);
-    }
-  }
-
   // If there are new trophies, save them
   if (newTrophies.length > 0) {
     const allTrophies = [...existingTrophies, ...newTrophies];
