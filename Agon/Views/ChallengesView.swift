@@ -247,14 +247,14 @@ struct ActiveChallengeCard: View {
                 Spacer()
             }
 
-            // Progress bar (same style as weekly)
+            // Progress bar - time remaining
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("Progress")
+                    Text("Day \(daysElapsed(challenge)) of \(totalDays(challenge))")
                         .font(.caption)
                         .foregroundStyle(Color.agonTextSecondary)
                     Spacer()
-                    Text("\(Int(progressForChallenge(challenge) * 100))%")
+                    Text("\(challenge.daysRemaining) days left")
                         .font(.caption.bold())
                         .foregroundStyle(Color.agonAccent)
                 }
@@ -286,6 +286,31 @@ struct ActiveChallengeCard: View {
 
         let elapsed = Date().timeIntervalSince(start)
         return min(1.0, max(0, elapsed / totalDuration))
+    }
+
+    private func daysElapsed(_ challenge: Challenge) -> Int {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let start = formatter.date(from: challenge.startDate) ?? {
+            formatter.formatOptions = [.withInternetDateTime]
+            return formatter.date(from: challenge.startDate) ?? Date()
+        }()
+        let elapsed = Calendar.current.dateComponents([.day], from: start, to: Date()).day ?? 0
+        return max(1, elapsed + 1)
+    }
+
+    private func totalDays(_ challenge: Challenge) -> Int {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let start = formatter.date(from: challenge.startDate) ?? {
+            formatter.formatOptions = [.withInternetDateTime]
+            return formatter.date(from: challenge.startDate) ?? Date()
+        }()
+        let end = formatter.date(from: challenge.endDate) ?? {
+            formatter.formatOptions = [.withInternetDateTime]
+            return formatter.date(from: challenge.endDate) ?? Date()
+        }()
+        return max(1, Calendar.current.dateComponents([.day], from: start, to: end).day ?? 1)
     }
 }
 
