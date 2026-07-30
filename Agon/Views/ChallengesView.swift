@@ -264,7 +264,6 @@ struct ChallengesView: View {
         }
         return "\(Int(value)) \(unit)"
     }
-    }
 
     // MARK: - Completed Section
 
@@ -334,7 +333,7 @@ struct ChallengesView: View {
             }
         }
     }
-}
+
 
 // MARK: - Challenge Category
 
