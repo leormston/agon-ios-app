@@ -162,24 +162,36 @@ struct ChallengesView: View {
             // Show joined weekly challenges
             if !joinedWeeklyChallenges.isEmpty {
                 ForEach(joinedWeeklyChallenges) { challenge in
-                    HStack {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(challenge.name)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.agonTextPrimary)
+
+                        Text(descriptionForWeekly(challenge))
+                            .font(.caption)
+                            .foregroundStyle(Color.agonTextSecondary)
+
+                        // Trophy tiers
+                        HStack(spacing: 16) {
+                            weeklyTier(label: "Bronze", target: challenge.bronzeTarget, unit: challenge.metricUnit, color: Color(red: 205/255, green: 127/255, blue: 50/255))
+                            weeklyTier(label: "Silver", target: challenge.silverTarget, unit: challenge.metricUnit, color: Color.gray)
+                            weeklyTier(label: "Gold", target: challenge.goldTarget, unit: challenge.metricUnit, color: Color(red: 255/255, green: 215/255, blue: 0/255))
+                        }
+
+                        // Progress
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(challenge.name)
-                                .font(.subheadline.bold())
-                                .foregroundStyle(Color.agonTextPrimary)
-                            HStack(spacing: 8) {
-                                Text("Avg: \(formatWeeklyProgress(challenge.progress, unit: challenge.metricUnit))")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.agonAccent)
-                                Text("Bronze: \(formatWeeklyProgress(challenge.bronzeTarget, unit: challenge.metricUnit))")
+                            HStack {
+                                Text("Your average")
                                     .font(.caption)
                                     .foregroundStyle(Color.agonTextSecondary)
+                                Spacer()
+                                Text(formatWeeklyProgress(challenge.progress, unit: challenge.metricUnit))
+                                    .font(.caption.bold())
+                                    .foregroundStyle(Color.agonAccent)
                             }
+                            ProgressView(value: min(1.0, challenge.progress / challenge.goldTarget))
+                                .tint(challenge.progress >= challenge.goldTarget ? Color(red: 255/255, green: 215/255, blue: 0/255) : challenge.progress >= challenge.silverTarget ? Color.gray : challenge.progress >= challenge.bronzeTarget ? Color(red: 205/255, green: 127/255, blue: 50/255) : Color.agonBorder)
                         }
-                        Spacer()
-                        ProgressView(value: min(1.0, challenge.progress / challenge.goldTarget))
-                            .tint(challenge.progress >= challenge.bronzeTarget ? Color.agonAccent : Color.agonBorder)
-                            .frame(width: 60)
                     }
                     .padding()
                     .background(Color.agonSurface)
@@ -263,6 +275,32 @@ struct ChallengesView: View {
             return String(format: "%.1f %@", value, unit)
         }
         return "\(Int(value)) \(unit)"
+    }
+
+    private func weeklyTier(label: String, target: Double, unit: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: "trophy.fill")
+                .font(.caption)
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption2.bold())
+                .foregroundStyle(Color.agonTextSecondary)
+            Text(formatWeeklyProgress(target, unit: unit))
+                .font(.caption2)
+                .foregroundStyle(Color.agonTextSecondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func descriptionForWeekly(_ challenge: PublicChallenge) -> String {
+        switch challenge.metric {
+        case "steps": return "Hit a daily step average this week."
+        case "distanceWalked": return "Average a set distance walked per day."
+        case "totalSleep": return "Maintain a healthy sleep average."
+        case "distanceRan": return "Keep up a daily running distance."
+        case "timeInDaylight": return "Spend time outdoors daily."
+        default: return "Hit the daily average target."
+        }
     }
     
     // MARK: - Completed Section
